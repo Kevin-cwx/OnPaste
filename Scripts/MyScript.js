@@ -200,7 +200,7 @@ menuItems.forEach((item) => {
 
   // Create icon element depending on item text
   const icon = document.createElement("i");
-  icon.style.width = "16px";  // consistent icon space
+  icon.style.width = "16px"; // consistent icon space
   icon.style.textAlign = "center";
   icon.style.fontSize = "14px";
 
@@ -238,12 +238,6 @@ menuItems.forEach((item) => {
 
   customMenu.appendChild(div);
 });
-
-
-
-
-
-
 
 // Show custom menu on right-click
 canvas.addEventListener("contextmenu", (e) => {
