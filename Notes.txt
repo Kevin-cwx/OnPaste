@@ -19,7 +19,8 @@ let selectionStartX = 0;
 let selectionStartY = 0;
 let selectionEndX = 0;
 let selectionEndY = 0;
-let cropAllowed = false; // Initially set to false
+let cropAllowed = true;
+
 
 // Set canvas to fill its container (or set your desired dimensions)
 canvas.width = canvas.parentElement.clientWidth;
@@ -37,7 +38,7 @@ document.addEventListener("paste", (event) => {
 
       reader.onload = (e) => {
         loadImage(e.target.result);
-        cropAllowed = true;
+         cropAllowed = false;
         selectionStartX = selectionStartY = selectionEndX = selectionEndY = 0;
       };
 
@@ -132,11 +133,6 @@ function drawImage() {
     scaledHeight
   );
   ctx.restore();
-
-  // Draw the selection rectangle if selecting
-  if (isSelecting) {
-    drawSelectionRect();
-  }
 }
 
 // Function to zoom the image
@@ -201,17 +197,18 @@ const menuItems = [
   { text: "Paste", action: triggerPaste },
   { text: "Download", action: saveImageAsFile },
   { text: "Refresh", action: refreshPage },
-  { text: "Crop", action: cropSelection },
 ];
 
 function rebuildMenu() {
   customMenu.innerHTML = "";
+  // Populate menu
   // Populate menu with icons + text side by side
   menuItems.forEach((item) => {
-
-     if (!image && (item.text === "Copy" || item.text === "Download" || item.text === "Crop")) {
-    return;
-  }
+    if (item.text === "Crop") {
+      const w = Math.abs(selectionEndX - selectionStartX);
+      const h = Math.abs(selectionEndY - selectionStartY);
+      if (w < 5 || h < 5) return; // skip showing Crop if no selection
+    }
 
     const div = document.createElement("div");
     div.style.padding = "4px 8px";
@@ -268,55 +265,11 @@ function rebuildMenu() {
 // Show custom menu on right-click
 canvas.addEventListener("contextmenu", (e) => {
   e.preventDefault();
-
-  if (!image) {
-    // If no image, just show the menu without the "Crop" option
-    showCustomContextMenu(e.clientX, e.clientY, false);
-    return;
-  }
-
-  // Start crop selection on right click
-  isSelecting = true;
-
-  const rect = canvas.getBoundingClientRect();
-  selectionStartX = e.clientX - rect.left;
-  selectionStartY = e.clientY - rect.top;
-  selectionEndX = selectionStartX;
-  selectionEndY = selectionStartY;
-
-  drawImage(); // redraw to clear previous selection if any
-  drawSelectionRect();
-
-  // Show context menu with "Crop" option near the mouse
-  showCustomContextMenu(e.clientX, e.clientY, true);
+  showCustomContextMenu(e.clientX, e.clientY);
 });
 
-canvas.addEventListener("mousemove", (e) => {
-  if (!isSelecting) return;
-  const rect = canvas.getBoundingClientRect();
-  selectionEndX = e.clientX - rect.left;
-  selectionEndY = e.clientY - rect.top;
-  drawImage();
-  drawSelectionRect();
-});
-
-canvas.addEventListener("mouseup", (e) => {
-  if (isSelecting) {
-    isSelecting = false;
-    // keep the selection rectangle visible until crop or cancel
-  }
-});
-
-function showCustomContextMenu(x, y, showCropOption) {
+function showCustomContextMenu(x, y) {
   rebuildMenu();
-
-  // Show or hide the "Crop" option based on the showCropOption parameter
-  const cropMenuItem = Array.from(customMenu.children).find(
-    (child) => child.textContent === "Crop"
-  );
-  if (cropMenuItem) {
-    cropMenuItem.style.display = showCropOption ? "flex" : "none";
-  }
 
   customMenu.style.top = y + "px";
   customMenu.style.left = x + "px";
@@ -369,7 +322,6 @@ async function triggerPaste() {
           const reader = new FileReader();
           reader.onload = (e) => {
             loadImage(e.target.result);
-            cropAllowed = true;
           };
           reader.readAsDataURL(blob);
           return; // stop after first image
@@ -399,6 +351,21 @@ function saveImageAsFile() {
 
 function refreshPage() {
   location.reload();
+}
+
+// Only show download option if image is loaded
+const downloadMenuItem = Array.from(customMenu.children).find(
+  (child) => child.textContent === "Download"
+);
+
+// Modify showCustomContextMenu to toggle "Download" visibility:
+function showCustomContextMenu(x, y) {
+  if (downloadMenuItem) {
+    downloadMenuItem.style.display = image ? "block" : "none";
+  }
+  customMenu.style.top = y + "px";
+  customMenu.style.left = x + "px";
+  customMenu.style.display = "block";
 }
 
 function getCroppedCanvas() {
@@ -433,6 +400,47 @@ function getCroppedCanvas() {
   return tempCanvas;
 }
 
+//Crop
+canvas.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+
+  if (!cropAllowed) {
+    // If crop disabled, just show menu without starting selection
+    showCustomContextMenu(e.clientX, e.clientY);
+    return;
+  }
+  // Start crop selection on right click
+  isSelecting = true;
+
+  const rect = canvas.getBoundingClientRect();
+  selectionStartX = e.clientX - rect.left;
+  selectionStartY = e.clientY - rect.top;
+  selectionEndX = selectionStartX;
+  selectionEndY = selectionStartY;
+
+  drawImage(); // redraw to clear previous selection if any
+  drawSelectionRect();
+
+  // Show context menu with "Crop" option near the mouse
+  showCustomContextMenu(e.clientX, e.clientY);
+});
+
+canvas.addEventListener("mousemove", (e) => {
+  if (!isSelecting) return;
+  const rect = canvas.getBoundingClientRect();
+  selectionEndX = e.clientX - rect.left;
+  selectionEndY = e.clientY - rect.top;
+  drawImage();
+  drawSelectionRect();
+});
+
+canvas.addEventListener("mouseup", (e) => {
+  if (isSelecting) {
+    isSelecting = false;
+    // keep the selection rectangle visible until crop or cancel
+  }
+});
+
 function drawSelectionRect() {
   if (!image) return;
 
@@ -448,6 +456,8 @@ function drawSelectionRect() {
   ctx.strokeRect(x, y, w, h);
   ctx.restore();
 }
+
+menuItems.push({ text: "Crop", action: cropSelection });
 
 function cropSelection() {
   if (!image) return;
@@ -491,7 +501,6 @@ function cropSelection() {
 
   // Clear selection
   selectionStartX = selectionStartY = selectionEndX = selectionEndY = 0;
-  isSelecting = false;
 }
 
-rebuildMenu();
+ rebuildMenu();
