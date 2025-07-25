@@ -1,5 +1,4 @@
 body {
-
     background-color: cornflowerblue;
     margin: 0;
     overflow: hidden;
@@ -8,6 +7,3 @@ body {
     justify-content: center;
     height: 100vh;
 }
-
-
-canvas {}
