@@ -142,7 +142,7 @@ body.dark-mode #collectionList::-webkit-scrollbar-thumb {
 
 .collection-item-container:hover {
     transform: scale(1.02);
-    border-color: #007acc;
+   
 }
 
 .collection-item {

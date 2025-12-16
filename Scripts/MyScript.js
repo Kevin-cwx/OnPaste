@@ -43,7 +43,7 @@ let windows = [];
 let activeWindow = null;
 let windowIdCounter = 0;
 
-// Context Menu
+// Context Menu    (Right Click)
 const customMenu = document.createElement("div");
 customMenu.style.position = "fixed";
 customMenu.style.background = "rgba(22, 22, 22, 0.87)";
@@ -240,8 +240,9 @@ class ImageWindow {
         const zoomFactor = delta < 0 ? 1.2 : 0.8;
         let newZoom = this.zoomLevel * zoomFactor;
 
-        if (newZoom < 0.1) newZoom = 0.1;
-        if (newZoom > 10) newZoom = 10;
+        //Zoom limits
+        //if (newZoom < 0.1) newZoom = 0.1;
+        //if (newZoom > 10) newZoom = 10;
 
         this.zoomLevel = newZoom;
         this.offsetX = mouseCanvasX - imageX * this.zoomLevel;
@@ -445,7 +446,7 @@ class ImageWindow {
         const h = Math.abs(this.selectionEndY - this.selectionStartY);
 
         this.ctx.save();
-        this.ctx.strokeStyle = "red";
+        this.ctx.strokeStyle = "#66FF00";
         this.ctx.lineWidth = 2;
         this.ctx.setLineDash([6]);
         this.ctx.strokeRect(x, y, w, h);
@@ -502,11 +503,10 @@ class ImageWindow {
 
 function addToCollection(src) {
     if (imageHistory.includes(src)) {
-        // Option: move to top or ignore? Let's move to top.
         const idx = imageHistory.indexOf(src);
         imageHistory.splice(idx, 1);
     }
-    imageHistory.unshift(src); // Add to top
+    imageHistory.unshift(src); 
     renderCollection();
 }
 
