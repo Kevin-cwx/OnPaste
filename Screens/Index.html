@@ -1,26 +1,40 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <link
-      rel="icon"
-      type="image/png"
-      href="https://em-content.zobj.net/thumbs/120/apple/354/framed-picture_1f5bc-fe0f.png" />
-    <link rel="stylesheet" type="text/css" href="../Styles/StyleSheet.css" />
-    <script
-      src="https://kit.fontawesome.com/aaea732d51.js"
-      crossorigin="anonymous"></script>
-    <title>OnPaste</title>
-  </head>
 
-  <body>
-    <canvas id="imageCanvas"></canvas>
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <link rel="icon" type="image/png"
+    href="https://em-content.zobj.net/thumbs/120/apple/354/framed-picture_1f5bc-fe0f.png" />
+  <link rel="stylesheet" type="text/css" href="../Styles/StyleSheet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/aaea732d51.js" crossorigin="anonymous"></script>
+  <title>OnPaste</title>
+</head>
 
-    <!-- Control to add new image windows -->
-    <button id="addWindowBtn" title="Add window"><i class="fa-solid fa-plus"></i></button>
+<body>
+  <!-- Global Control to add new image windows -->
+  <button id="collectionBtn" title="History"><i class="fa-solid fa-images"></i></button>
+  <button id="darkModeBtn"><i class="fa-solid fa-moon"></i></button>
+  <button id="addWindowBtn"><i class="fa-solid fa-plus"></i></button>
 
-    <!-- Container for popup windows that accept pasted images -->
-    <div id="windowsContainer"></div>
-    <script src="../Scripts/MyScript.js"></script>
-  </body>
+  <!-- Collection Side Panel -->
+  <div id="collectionPanel">
+    <button id="closeCollectionBtn" class="close-btn"
+      style="position: absolute; top: 10px; right: 10px; display: flex;"><i class="fa-solid fa-xmark"></i></button>
+    <h3>History</h3>
+    <div id="collectionList"></div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast">Image copied to clipboard!</div>
+
+  <!-- Main container for the split screen windows -->
+  <div id="appContainer">
+    <!-- Windows will be injected here by JS -->
+  </div>
+  <script src="../Scripts/MyScript.js"></script>
+</body>
+
 </html>

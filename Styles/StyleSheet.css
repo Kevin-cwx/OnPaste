@@ -1,131 +1,292 @@
 body {
-    background-color: cornflowerblue;
+    background: linear-gradient(90deg, cornflowerblue, #83a4d4);
+    /* Blue to Lighter Blue (no white) */
     margin: 0;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     height: 100vh;
+    width: 100vw;
+    font-family: 'Quicksand', sans-serif;
 }
 
-/* Add button */
+#appContainer {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: stretch;
+    /* Windows stretch to full height */
+}
+
+/* Dark Mode State */
+body.dark-mode {
+    background: #1a1a1a;
+    /* Override gradient */
+    color: #f0f0f0;
+}
+
+/* Global Buttons */
+#addWindowBtn,
+#darkModeBtn,
+#collectionBtn {
+    position: fixed;
+    top: 10px;
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #ffffffcc;
+    color: #333;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
 #addWindowBtn {
+    right: 10px;
+}
+
+#darkModeBtn {
+    right: 60px;
+    /* Left of the add button */
+}
+
+#collectionBtn {
+    right: 110px;
+}
+
+#addWindowBtn:hover,
+#darkModeBtn:hover,
+#collectionBtn:hover {
+    background-color: #fff;
+    transform: scale(1.1);
+}
+
+/* History Collection Panel - Mac Style */
+#collectionPanel {
     position: fixed;
-    top: 12px;
-    right: 12px;
-    background: #ffffffcc;
-    border: none;
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    top: 10px;
+    right: -320px;
+    /* Hidden */
+    width: 280px;
+    height: calc(100% - 20px);
+    /* Floating look */
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    z-index: 2000;
+    transition: right 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 9999;
-    font-size: 18px;
+    flex-direction: column;
+    padding: 16px;
+    box-sizing: border-box;
 }
 
-#addWindowBtn:hover { background: #fff; }
-
-/* Windows container */
-#windowsContainer {
-    position: fixed;
-    inset: 0; /* fill viewport so children can be absolutely positioned */
-    pointer-events: none; /* children will opt-in */
+body.dark-mode #collectionPanel {
+    background: rgba(40, 40, 40, 0.85);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.window {
-    position: absolute;
-    width: 520px;
-    height: 320px;
-    background: #ffffffee;
-    border-radius: 8px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-    pointer-events: auto;
-    display: flex;
-    overflow: hidden;
+#collectionPanel.open {
+    right: 10px;
+    /* Floating margin */
 }
 
-.window .close-btn {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    z-index: 10;
-    background: rgba(0,0,0,0.6);
-    color: white;
-    border: none;
-    width: 30px;
-    height: 30px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 18px;
+#collectionPanel h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 1.2rem;
+    font-weight: 600;
 }
 
-.window .pane {
+#collectionList {
     flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 10px;
+}
+
+/* Scrollbar styling for list */
+#collectionList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#collectionList::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+body.dark-mode #collectionList::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Item Container */
+.collection-item-container {
     position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    background: #fff;
+    border: 2px solid transparent;
+}
+
+.collection-item-container:hover {
+    transform: scale(1.02);
+    border-color: #007acc;
+}
+
+.collection-item {
+    width: 100%;
+    display: block;
+    cursor: grab;
+    /* Indicates drag */
+}
+
+.collection-item:active {
+    cursor: grabbing;
+}
+
+/* Quick Paste Button (Bottom Left) */
+.quick-paste-btn {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 122, 204, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #f6f6f6;
-    overflow: hidden;
-    min-width: 0; /* allow flex children to shrink */
+    cursor: pointer;
+    opacity: 0;
+    /* Hidden by default */
+    transform: scale(0.8);
+    transition: all 0.2s ease;
 }
 
-.window .pane:focus { outline: 2px solid #4a90e2; }
-
-.window .pane img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+.collection-item-container:hover .quick-paste-btn {
+    opacity: 1;
+    transform: scale(1);
 }
 
-.window .divider {
-    width: 1px;
-    background: rgba(0,0,0,0.12);
-    align-self: stretch;
-    flex: none;
+.quick-paste-btn:hover {
+    background: #005f9e;
+    transform: scale(1.1);
 }
 
-/* Fullscreen split specifics */
-.window.fullscreen {
+/* Toast Notification */
+#toast {
     position: fixed;
-    inset: 0;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 14px;
+    z-index: 3000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+#toast.show {
+    opacity: 1;
+}
+
+/* Magnifier Loupe */
+#magnifier {
+    position: fixed;
+    border-radius: 12px;
+    border: 3px solid #333;
+    pointer-events: none;
+    /* Let clicks pass through */
+    z-index: 5000;
+    display: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    background-color: white;
+    /* Fallback */
+}
+
+/* Individual Window */
+.window {
+    flex: 1;
+    /* Split specific width equally */
+    position: relative;
+    background-color: transparent;
+    /* Transparent to show body blue */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* Important for flex children */
+    border-right: 2px solid #000;
+    /* Distinct black divider */
+}
+
+/* Remove border from the last window */
+.window:last-child {
+    border-right: none;
+}
+
+/* Fix overlap: Move close button of the last window to the left of global buttons (Add, Dark, Collection) */
+.window:last-child .close-btn {
+    right: 160px;
+}
+
+/* Canvas styling to fill the window */
+.window canvas {
+    flex: 1;
+    display: block;
     width: 100%;
     height: 100%;
-    border-radius: 0;
-    display: flex;
-    background: transparent; /* keep page blue background visible */
+    cursor: grab;
 }
 
-.window.fullscreen .pane { min-width: 0; background: transparent; }
-..window.fullscreen .divider { width: 2px; background: #000; align-self: stretch; flex: none; height: 100%; }
-.window.fullscreen .pane-placeholder { display: none; }
-
-/* fullscreen close button larger and contrasted */
-.window.fullscreen .close-btn {
-    background: rgba(0,0,0,0.7);
+/* Close/Remove Button per window */
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 0, 0, 0.7);
     color: white;
-    top: 12px;
-    right: 12px;
-}
-
-/* canvas fills pane */
-.pane canvas { width: 100%; height: 100%; display: block; }
-
-.pane-placeholder {
-    color: #666;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 14px;
-    text-align: center;
-    padding: 8px;
+    z-index: 10;
 }
 
-/* small offset pattern for multiple windows */
-.window[data-offset="1"] { transform: translate(12px, 12px); }
-.window[data-offset="2"] { transform: translate(-12px, 18px); }
-.window[data-offset="3"] { transform: translate(18px, -12px); }
+.close-btn:hover {
+    background: red;
+}
 
-/* allow user to see and interact with windows */
-.window { cursor: default; }
+/* Placeholder text if needed when empty */
+.empty-msg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #888;
+    pointer-events: none;
+    font-size: 1.2rem;
+}
