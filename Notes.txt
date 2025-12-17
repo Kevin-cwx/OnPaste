@@ -1,0 +1,2 @@
+Allow user to Choose color for crop line
+When cropping, add mouse to 
