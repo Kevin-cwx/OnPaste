@@ -139,9 +139,28 @@ class ImageWindow {
         this.container.addEventListener("drop", (e) => {
             e.preventDefault();
             this.container.style.boxShadow = "";
+            
+            // Handle File Drop (from PC)
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.type.startsWith("image/")) {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        this.loadImage(evt.target.result, true); // Add to history
+                        setActiveWindow(this);
+                    };
+                    reader.readAsDataURL(file);
+                }
+                return;
+            }
+
+            // Handle URL/Text Drop (Internal History)
             const imageUrl = e.dataTransfer.getData("text/plain");
             if (imageUrl) {
-                this.loadImage(imageUrl, false); // Don't duplicate history
+                // If dragging from history, we can choose to move to top (true) or leave as is (false).
+                // User said "add any image that appears... in history". 
+                // Let's set to true to ensure it's always in history/refreshed.
+                this.loadImage(imageUrl, true); 
                 setActiveWindow(this);
             }
         });
@@ -646,9 +665,9 @@ document.addEventListener("paste", (event) => {
 const menuItems = [
     { text: "Copy", action: () => performAction("copy") },
     { text: "Paste", action: () => performAction("paste") },
-    { text: "Download", action: () => performAction("download") },
-    { text: "Refresh", action: () => location.reload() },
     { text: "Crop", action: () => performAction("crop") },
+    { text: "Refresh", action: () => location.reload() },
+    { text: "Download", action: () => performAction("download") },
     { text: "Reset Zoom", action: () => performAction("reset") },
 ];
 
