@@ -30,8 +30,9 @@ body.dark-mode {
     position: fixed;
     top: 10px;
     z-index: 1000;
-    width: 40px;
-    height: 40px;
+    --button-size: 40px;
+    width: var(--button-size);
+    height: var(--button-size);
     border-radius: 50%;
     background-color: #ffffffcc;
     color: #333;
