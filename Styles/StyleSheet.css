@@ -1,5 +1,5 @@
 body {
-    background: linear-gradient(90deg, cornflowerblue, #83a4d4);
+    background: linear-gradient(90deg, cornflowerblue, rgb(143, 199, 246));
     /* Blue to Lighter Blue (no white) */
     margin: 0;
     overflow: hidden;
@@ -13,7 +13,6 @@ body {
     width: 100%;
     height: 100%;
     align-items: stretch;
-    /* Windows stretch to full height */
 }
 
 /* Dark Mode State */
@@ -51,7 +50,6 @@ body.dark-mode {
 
 #darkModeBtn {
     right: 60px;
-    /* Left of the add button */
 }
 
 #collectionBtn {
@@ -65,7 +63,6 @@ body.dark-mode {
     transform: scale(1.1);
 }
 
-/* History Collection Panel - Mac Style */
 #collectionPanel {
     position: fixed;
     top: 10px;
@@ -96,7 +93,6 @@ body.dark-mode #collectionPanel {
 
 #collectionPanel.open {
     right: 10px;
-    /* Floating margin */
 }
 
 #collectionPanel h3 {
@@ -118,7 +114,7 @@ body.dark-mode #collectionPanel {
 
 /* Scrollbar styling for list */
 #collectionList::-webkit-scrollbar {
-    width: 6px;
+    width: 60px;
 }
 
 #collectionList::-webkit-scrollbar-thumb {
@@ -130,7 +126,6 @@ body.dark-mode #collectionList::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Item Container */
 .collection-item-container {
     position: relative;
     border-radius: 12px;
@@ -143,21 +138,18 @@ body.dark-mode #collectionList::-webkit-scrollbar-thumb {
 
 .collection-item-container:hover {
     transform: scale(1.02);
-   
 }
 
 .collection-item {
     width: 100%;
     display: block;
     cursor: grab;
-    /* Indicates drag */
 }
 
 .collection-item:active {
     cursor: grabbing;
 }
 
-/* Quick Paste Button (Bottom Left) */
 .quick-paste-btn {
     position: absolute;
     bottom: 8px;
@@ -173,7 +165,6 @@ body.dark-mode #collectionList::-webkit-scrollbar-thumb {
     justify-content: center;
     cursor: pointer;
     opacity: 0;
-    /* Hidden by default */
     transform: scale(0.8);
     transition: all 0.2s ease;
 }
@@ -188,7 +179,6 @@ body.dark-mode #collectionList::-webkit-scrollbar-thumb {
     transform: scale(1.1);
 }
 
-/* Toast Notification */
 #toast {
     position: fixed;
     top: 20px;
@@ -209,47 +199,36 @@ body.dark-mode #collectionList::-webkit-scrollbar-thumb {
     opacity: 1;
 }
 
-/* Magnifier Loupe */
 #magnifier {
     position: fixed;
     border-radius: 12px;
     border: 3px solid #333;
     pointer-events: none;
-    /* Let clicks pass through */
     z-index: 5000;
     display: none;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     background-color: white;
-    /* Fallback */
 }
 
-/* Individual Window */
 .window {
     flex: 1;
-    /* Split specific width equally */
     position: relative;
     background-color: transparent;
-    /* Transparent to show body blue */
     overflow: hidden;
     display: flex;
     flex-direction: column;
     min-width: 0;
-    /* Important for flex children */
     border-right: 2px solid #000;
-    /* Distinct black divider */
 }
 
-/* Remove border from the last window */
 .window:last-child {
     border-right: none;
 }
 
-/* Fix overlap: Move close button of the last window to the left of global buttons (Add, Dark, Collection) */
 .window:last-child .close-btn {
     right: 160px;
 }
 
-/* Canvas styling to fill the window */
 .window canvas {
     flex: 1;
     display: block;
@@ -258,7 +237,6 @@ body.dark-mode #collectionList::-webkit-scrollbar-thumb {
     cursor: grab;
 }
 
-/* Close/Remove Button per window */
 .close-btn {
     position: absolute;
     top: 10px;
@@ -279,15 +257,4 @@ body.dark-mode #collectionList::-webkit-scrollbar-thumb {
 
 .close-btn:hover {
     background: red;
-}
-
-/* Placeholder text if needed when empty */
-.empty-msg {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #888;
-    pointer-events: none;
-    font-size: 1.2rem;
 }

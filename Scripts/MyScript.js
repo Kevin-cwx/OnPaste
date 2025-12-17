@@ -557,7 +557,7 @@ function renderCollection() {
     const img = document.createElement("img");
     img.src = src;
     img.className = "collection-item";
-    img.title = "Drag to window or Click to copy";
+    //img.title = "Drag to window or Click to copy";
     img.draggable = true;
 
     // Drag Events
@@ -575,8 +575,8 @@ function renderCollection() {
     const pasteBtn = document.createElement("button");
     pasteBtn.className = "quick-paste-btn";
     pasteBtn.innerHTML =
-      "<i class='fa-solid fa-arrow-up-right-from-square'></i>";
-    pasteBtn.title = "Paste to Window";
+      "<i class='fa-solid fa-paste'></i>";
+    //pasteBtn.title = "Paste to Window";
     pasteBtn.addEventListener("click", (e) => {
       e.stopPropagation(); // Prevent copy logic
       if (activeWindow) {
