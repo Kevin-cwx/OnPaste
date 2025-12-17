@@ -697,7 +697,8 @@ function rebuildMenu() {
     div.style.padding = "4px 8px";
     div.style.display = "flex";
     div.style.alignItems = "center";
-    div.style.gap = "8px";
+    div.style.gap = "15px";
+    div.style.borderRadius = "10px";
 
     const icon = document.createElement("i");
     icon.style.textAlign = "center";
