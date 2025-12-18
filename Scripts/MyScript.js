@@ -210,7 +210,7 @@ class ImageWindow {
       addToCollection(src);
     }
     this._applyImage(src, preserveView);
-    
+
     // Show settings button when image is loaded
     settingsBtn.style.display = "block";
   }
