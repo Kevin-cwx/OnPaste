@@ -1,12 +1,1 @@
-Features
-  Blur
-  Draw with pencil
-  Add text
   Multi overlay (Add image on top of image)
-  Extract color with hex
-    Automatic palette
-    And allow user to select color
-  OCR
-  Increase brightness 
-  Settings button
-    Toggle advanced items in context menu

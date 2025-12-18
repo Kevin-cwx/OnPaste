@@ -25,7 +25,10 @@ body.dark-mode {
 /* Global Buttons */
 #addWindowBtn,
 #darkModeBtn,
-#collectionBtn {
+#addWindowBtn,
+#darkModeBtn,
+#collectionBtn,
+#settingsBtn {
     position: fixed;
     top: 10px;
     z-index: 1000;
@@ -54,6 +57,12 @@ body.dark-mode {
 
 #collectionBtn {
     right: 110px;
+}
+
+#settingsBtn {
+    right: 160px;
+    display: none;
+    /* Hidden by default, shown when image is loaded */
 }
 
 #addWindowBtn:hover,
