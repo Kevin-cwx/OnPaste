@@ -741,7 +741,7 @@ class ImageWindow {
 
     // Use pixelation approach - more effective than blur for obscuring text
     const pixelSize = 3; // Pixel block size (smaller = more detail, larger = more obscured)
-    
+
     // Create small canvas (downscale)
     const smallW = Math.max(1, Math.floor(r.w / pixelSize));
     const smallH = Math.max(1, Math.floor(r.h / pixelSize));
@@ -749,13 +749,13 @@ class ImageWindow {
     smallCanvas.width = smallW;
     smallCanvas.height = smallH;
     const smallCtx = smallCanvas.getContext('2d');
-    
+
     // Disable image smoothing for pixelated effect
     smallCtx.imageSmoothingEnabled = false;
-    
+
     // Draw region to small canvas (downscale)
     smallCtx.drawImage(temp, r.x, r.y, r.w, r.h, 0, 0, smallW, smallH);
-    
+
     // Draw small canvas back to original size (upscale with pixelation)
     tCtx.imageSmoothingEnabled = false;
     tCtx.drawImage(smallCanvas, 0, 0, smallW, smallH, r.x, r.y, r.w, r.h);
@@ -1277,7 +1277,7 @@ function rebuildMenu() {
 
     // Custom Draw UI
     const drawContainer = document.createElement("div");
-    drawContainer.style.padding = "8px";
+    drawContainer.style.padding = "0"; // Removed padding to align with other items
     drawContainer.style.display = "flex";
     drawContainer.style.flexDirection = "column";
     drawContainer.style.gap = "8px";
@@ -1338,10 +1338,17 @@ function rebuildMenu() {
 
       dot.addEventListener("click", (e) => {
         e.stopPropagation();
-        hideCustomContextMenu();
+        // Don't close menu, just update settings
+        // hideCustomContextMenu(); 
         if (menuTargetWindow) {
           menuTargetWindow.drawColor = c.hex;
           menuTargetWindow.setMode('draw');
+          // Update slider color immediately
+          const slider = drawContainer.querySelector("input[type=range]");
+          if (slider) {
+            slider.style.setProperty('--thumb-color', c.hex);
+            menuTargetWindow.brushSize = parseInt(slider.value); // Re-trigger update if needed to sync
+          }
         }
       });
 
@@ -1375,7 +1382,8 @@ function rebuildMenu() {
       shapeBtn.style.justifyContent = "center";
       shapeBtn.style.cursor = "pointer";
       shapeBtn.style.border = "2px solid rgba(255,255,255,0.2)";
-      shapeBtn.style.borderRadius = "4px";
+      // Make the border circular for the circle tool, otherwise rounded square
+      shapeBtn.style.borderRadius = s.type === 'circle' ? "50%" : "4px";
       shapeBtn.style.backgroundColor = "rgba(255,255,255,0.1)";
 
       const icon = document.createElement("i");
@@ -1411,18 +1419,37 @@ function rebuildMenu() {
 
     const slider = document.createElement("input");
     slider.type = "range";
-    slider.min = "1";
+    slider.className = "custom-slider"; // Use new CSS class
+    slider.min = "5"; // Min size 5px
     slider.max = "50";
-    slider.value = "10"; // Default (matches brushSize)
-    slider.style.width = "100px";
-    slider.style.cursor = "pointer";
+    slider.value = menuTargetWindow ? menuTargetWindow.brushSize : "10";
+    slider.style.width = "calc(100% - 20px)"; // Full width minus padding
+    
+    // Initial State
+    const initialColor = menuTargetWindow ? menuTargetWindow.drawColor : "#ff0000";
+    const initialSize = menuTargetWindow ? menuTargetWindow.brushSize : 10;
+    
+    // Helper to set fill percent
+    const updateFill = (val, min, max) => {
+      const percentage = ((val - min) / (max - min)) * 100;
+      slider.style.setProperty('--track-fill-percent', percentage + "%");
+    };
+
+    slider.style.setProperty('--thumb-color', initialColor);
+    slider.style.setProperty('--thumb-size', initialSize + "px");
+    updateFill(initialSize, 5, 50);
 
     // Prevent menu closing when interacting with slider
     slider.addEventListener("click", (e) => e.stopPropagation());
 
     slider.addEventListener("input", (e) => {
       if (menuTargetWindow) {
-        menuTargetWindow.brushSize = parseInt(e.target.value);
+        const size = parseInt(e.target.value);
+        menuTargetWindow.brushSize = size;
+        
+        // Update Thumb Scaling & Track Fill
+        slider.style.setProperty('--thumb-size', size + "px");
+        updateFill(size, 5, 50);
       }
     });
 
