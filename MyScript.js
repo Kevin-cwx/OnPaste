@@ -14,7 +14,9 @@ let isAdvancedSettings = true; // Auto-enabled for now
 settingsBtn.addEventListener("click", () => {
   isAdvancedSettings = !isAdvancedSettings;
   settingsBtn.style.transform = isAdvancedSettings ? "rotate(90deg)" : "rotate(0deg)";
-  settingsBtn.style.backgroundColor = isAdvancedSettings ? "#ddd" : "#ffffffcc";
+  // State: Selected (White + Border) vs Unselected (Standard)
+  settingsBtn.style.backgroundColor = isAdvancedSettings ? "#ffffff" : "#ffffffcc";
+  settingsBtn.style.border = isAdvancedSettings ? "2px solid white" : "none";
   rebuildMenu();
 });
 
@@ -124,8 +126,8 @@ class ImageWindow {
     this.drawColor = "#ff0000"; // Default Red
     this.brushSize = 10; // Default Brush Size (was 5px)
     this.isDrawing = false;
-    this.shapeType = null; // 'circle', 'square', 'arrow', null
-    this.arrowFirstClick = null; // Store first click for arrow
+    this.isDrawing = false;
+    this.shapeType = null; // 'circle', 'square', null
 
     this.initEvents();
   }
@@ -331,26 +333,6 @@ class ImageWindow {
 
     if (this.currentMode === 'draw') {
       const rect = this.canvas.getBoundingClientRect();
-
-      // Arrow mode: two-click interaction
-      if (this.shapeType === 'arrow') {
-        if (!this.arrowFirstClick) {
-          // First click: set arrowhead
-          const x = (e.clientX - rect.left - this.offsetX) / this.zoomLevel;
-          const y = (e.clientY - rect.top - this.offsetY) / this.zoomLevel;
-          this.arrowFirstClick = { x, y };
-          showToast("Click again to set arrow tail");
-        } else {
-          // Second click: draw arrow and finish
-          const x = (e.clientX - rect.left - this.offsetX) / this.zoomLevel;
-          const y = (e.clientY - rect.top - this.offsetY) / this.zoomLevel;
-          this.drawArrow(this.arrowFirstClick.x, this.arrowFirstClick.y, x, y);
-          this.arrowFirstClick = null;
-          this.shapeType = null;
-          this.disableMode();
-        }
-        return;
-      }
 
       // Circle/Square mode: center-based (like Paint)
       if (this.shapeType === 'circle' || this.shapeType === 'square') {
@@ -828,6 +810,8 @@ class ImageWindow {
     const halfSize = r.radius;
     tCtx.strokeStyle = this.drawColor;
     tCtx.lineWidth = this.brushSize;
+    tCtx.lineCap = 'butt';
+    tCtx.lineJoin = 'miter';
     tCtx.strokeRect(
       r.centerX - halfSize,
       r.centerY - halfSize,
@@ -838,42 +822,7 @@ class ImageWindow {
     this.loadImage(temp.toDataURL(), true, true); // Save to undo stack, preserve view
   }
 
-  drawArrow(x1, y1, x2, y2) {
-    const temp = document.createElement('canvas');
-    temp.width = this.image.width;
-    temp.height = this.image.height;
-    const tCtx = temp.getContext('2d');
-    tCtx.drawImage(this.image, 0, 0);
 
-    // Draw arrow line from tail (x2,y2) to head (x1,y1)
-    tCtx.strokeStyle = this.drawColor;
-    tCtx.lineWidth = this.brushSize;
-    tCtx.beginPath();
-    tCtx.moveTo(x2, y2); // Start from tail
-    tCtx.lineTo(x1, y1); // Draw to head
-    tCtx.stroke();
-
-    // Draw arrowhead at x1,y1 pointing FROM x2,y2
-    const angle = Math.atan2(y1 - y2, x1 - x2);
-    const headLength = this.brushSize * 3;
-
-    tCtx.beginPath();
-    // Left wing
-    tCtx.moveTo(x1, y1);
-    tCtx.lineTo(
-      x1 - headLength * Math.cos(angle - Math.PI / 6),
-      y1 - headLength * Math.sin(angle - Math.PI / 6)
-    );
-    // Right wing
-    tCtx.moveTo(x1, y1);
-    tCtx.lineTo(
-      x1 - headLength * Math.cos(angle + Math.PI / 6),
-      y1 - headLength * Math.sin(angle + Math.PI / 6)
-    );
-    tCtx.stroke();
-
-    this.loadImage(temp.toDataURL(), true, true); // Save to undo stack, preserve view
-  }
 
 
 
@@ -902,8 +851,10 @@ class ImageWindow {
 
     this.ctx.save();
     this.ctx.strokeStyle = this.drawColor;
-    this.ctx.lineWidth = 3;
-    this.ctx.setLineDash([8]);
+    this.ctx.lineWidth = this.brushSize * this.zoomLevel; // Actual size on screen
+    this.ctx.lineCap = shapeType === 'square' ? 'butt' : 'round';
+    this.ctx.lineJoin = shapeType === 'square' ? 'miter' : 'round';
+    // this.ctx.setLineDash([8]); // Removed dashed line for solid preview
 
     if (shapeType === 'circle') {
       this.ctx.beginPath();
@@ -1369,8 +1320,7 @@ function rebuildMenu() {
 
     const shapes = [
       { type: 'circle', icon: 'fa-circle' },
-      { type: 'square', icon: 'fa-square' },
-      { type: 'arrow', icon: 'fa-arrow-right' }
+      { type: 'square', icon: 'fa-square' }
     ];
 
     shapes.forEach(s => {
@@ -1424,11 +1374,11 @@ function rebuildMenu() {
     slider.max = "50";
     slider.value = menuTargetWindow ? menuTargetWindow.brushSize : "10";
     slider.style.width = "calc(100% - 20px)"; // Full width minus padding
-    
+
     // Initial State
     const initialColor = menuTargetWindow ? menuTargetWindow.drawColor : "#ff0000";
     const initialSize = menuTargetWindow ? menuTargetWindow.brushSize : 10;
-    
+
     // Helper to set fill percent
     const updateFill = (val, min, max) => {
       const percentage = ((val - min) / (max - min)) * 100;
@@ -1446,7 +1396,7 @@ function rebuildMenu() {
       if (menuTargetWindow) {
         const size = parseInt(e.target.value);
         menuTargetWindow.brushSize = size;
-        
+
         // Update Thumb Scaling & Track Fill
         slider.style.setProperty('--thumb-size', size + "px");
         updateFill(size, 5, 50);
@@ -1581,7 +1531,8 @@ function performAction(actionName) {
     case "toggleAdvanced":
       isAdvancedSettings = !isAdvancedSettings;
       settingsBtn.style.transform = isAdvancedSettings ? "rotate(90deg)" : "rotate(0deg)";
-      settingsBtn.style.backgroundColor = isAdvancedSettings ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.1)";
+      settingsBtn.style.backgroundColor = isAdvancedSettings ? "#ffffff" : "#ffffffcc";
+      settingsBtn.style.border = isAdvancedSettings ? "2px solid white" : "none";
       showToast(isAdvancedSettings ? "Advanced Settings ON" : "Advanced Settings OFF");
       break;
 
@@ -1625,6 +1576,11 @@ async function triggerPaste() {
 }
 
 rebuildMenu();
+
+// Init Settings Button Style
+settingsBtn.style.transform = isAdvancedSettings ? "rotate(90deg)" : "rotate(0deg)";
+settingsBtn.style.backgroundColor = isAdvancedSettings ? "#ffffff" : "#ffffffcc";
+settingsBtn.style.border = isAdvancedSettings ? "2px solid white" : "none";
 
 // === Global Keyboard Shortcuts ===
 document.addEventListener("keydown", (e) => {
