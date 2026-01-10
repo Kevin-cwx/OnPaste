@@ -317,13 +317,7 @@ class ImageWindow {
 
     if (e.button === 2) return;
 
-    if (this.currentMode === 'text') {
-      const rect = this.canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      this.addTextInput(x, y, e.clientX, e.clientY);
-      return;
-    }
+
 
     if (this.currentMode === 'color') {
       const rect = this.canvas.getBoundingClientRect();
@@ -609,7 +603,6 @@ class ImageWindow {
   setMode(mode) {
     this.currentMode = mode;
     if (mode === 'draw') this.canvas.style.cursor = "crosshair";
-    else if (mode === 'text') this.canvas.style.cursor = "text";
     else if (mode === 'color') this.canvas.style.cursor = "crosshair"; // Precise cursor for color picking
     else if (['crop', 'blur', 'focus'].includes(mode)) this.canvas.style.cursor = "crosshair";
     else this.canvas.style.cursor = "grab";
@@ -657,59 +650,7 @@ class ImageWindow {
     this.disableMode();
   }
 
-  addTextInput(relX, relY, absX, absY) {
-    const input = document.createElement("input");
-    input.type = "text";
-    input.style.position = "fixed";
-    input.style.left = absX + "px";
-    input.style.top = absY + "px";
-    input.style.fontSize = "24px";
-    input.style.fontFamily = "'Quicksand', sans-serif";
-    input.style.border = "2px solid black";
-    input.style.backgroundColor = "white";
-    input.style.padding = "4px";
-    input.style.zIndex = "10000";
 
-    document.body.appendChild(input);
-    input.focus();
-
-    const finish = () => {
-      const text = input.value;
-      if (text) {
-        this.burnText(text, relX, relY);
-      }
-      input.remove();
-      this.disableMode();
-    };
-
-    input.addEventListener("blur", finish);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === 'Enter') {
-        input.blur();
-      }
-    });
-  }
-
-  burnText(text, screenX, screenY) {
-    const imageX = (screenX - this.offsetX) / this.zoomLevel;
-    const imageY = (screenY - this.offsetY) / this.zoomLevel;
-
-    const temp = document.createElement('canvas');
-    temp.width = this.image.width;
-    temp.height = this.image.height;
-    const tCtx = temp.getContext('2d');
-    tCtx.drawImage(this.image, 0, 0);
-
-    tCtx.font = "bold 40px 'Quicksand', sans-serif";
-    tCtx.fillStyle = "white";
-    tCtx.strokeStyle = "black";
-    tCtx.lineWidth = 2;
-
-    tCtx.fillText(text, imageX, imageY);
-    tCtx.strokeText(text, imageX, imageY);
-
-    this.loadImage(temp.toDataURL(), false, true); // Preserve zoom/offset
-  }
 
   applyBlur() {
     const r = this.getSelectionRectOnImage();
@@ -1117,7 +1058,7 @@ const advancedItems = [
   { text: "Blur", action: () => performAction("blur") },
   { text: "Focus", action: () => performAction("focus") },
   { text: "Get Color", action: () => performAction("getColor") },
-  { text: "Text", action: () => performAction("text") },
+
   // Draw is handled specially
 ];
 
@@ -1160,7 +1101,7 @@ function rebuildMenu() {
       case "Blur": icon.className = "fa-solid fa-droplet"; break;
       case "Focus": icon.className = "fa-solid fa-eye"; break;
       case "Get Color": icon.className = "fa-solid fa-eye-dropper"; break;
-      case "Text": icon.className = "fa-solid fa-font"; break;
+
       case "Draw Red": icon.className = "fa-solid fa-pencil"; icon.style.color = "red"; break;
       case "Draw Blue": icon.className = "fa-solid fa-pencil"; icon.style.color = "blue"; break;
       case "Draw Yellow": icon.className = "fa-solid fa-pencil"; icon.style.color = "gold"; break;
@@ -1206,7 +1147,7 @@ function rebuildMenu() {
         case "Blur": icon.className = "fa-solid fa-droplet"; break;
         case "Focus": icon.className = "fa-solid fa-eye"; break;
         case "Get Color": icon.className = "fa-solid fa-eye-dropper"; break;
-        case "Text": icon.className = "fa-solid fa-font"; break;
+
         case "Draw Red": icon.className = "fa-solid fa-pencil"; icon.style.color = "red"; break;
         case "Draw Blue": icon.className = "fa-solid fa-pencil"; icon.style.color = "blue"; break;
         case "Draw Yellow": icon.className = "fa-solid fa-pencil"; icon.style.color = "gold"; break;
@@ -1522,9 +1463,7 @@ function performAction(actionName) {
     case "getColor":
       menuTargetWindow.setMode('color');
       break;
-    case "text":
-      menuTargetWindow.setMode('text');
-      break;
+
     case "drawRed":
       // Legacy fallback or remove
       break;
