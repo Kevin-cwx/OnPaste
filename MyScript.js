@@ -14,9 +14,13 @@ let windowLayout = localStorage.getItem("windowLayout") || "horizontal";
 // Settings Toggle
 settingsBtn.addEventListener("click", () => {
   isAdvancedSettings = !isAdvancedSettings;
-  settingsBtn.style.transform = isAdvancedSettings ? "rotate(90deg)" : "rotate(0deg)";
+  settingsBtn.style.transform = isAdvancedSettings
+    ? "rotate(90deg)"
+    : "rotate(0deg)";
   // State: Selected (White + Border) vs Unselected (Standard)
-  settingsBtn.style.backgroundColor = isAdvancedSettings ? "#ffffff" : "#ffffffcc";
+  settingsBtn.style.backgroundColor = isAdvancedSettings
+    ? "#ffffff"
+    : "#ffffffcc";
   settingsBtn.style.border = isAdvancedSettings ? "2px solid white" : "none";
   rebuildMenu();
 });
@@ -150,7 +154,7 @@ class ImageWindow {
     this.canvas.addEventListener("mouseup", (e) => this.handleMouseUp(e));
     this.canvas.addEventListener("mouseleave", (e) => this.handleMouseLeave(e));
     this.canvas.addEventListener("contextmenu", (e) =>
-      this.handleContextMenu(e)
+      this.handleContextMenu(e),
     );
 
     // Drag and Drop Events
@@ -185,7 +189,7 @@ class ImageWindow {
       const imageUrl = e.dataTransfer.getData("text/plain");
       if (imageUrl) {
         // If dragging from history, we can choose to move to top (true) or leave as is (false).
-        // User said "add any image that appears... in history". 
+        // User said "add any image that appears... in history".
         // Let's set to true to ensure it's always in history/refreshed.
         this.loadImage(imageUrl, true);
         setActiveWindow(this);
@@ -267,16 +271,16 @@ class ImageWindow {
       0,
       0,
       scaledWidth,
-      scaledHeight
+      scaledHeight,
     );
     this.ctx.restore();
 
     if (this.isSelecting) {
       // Draw shape preview for circle/square, or selection rect for crop/blur/focus
-      if (this.shapeType === 'circle') {
-        this.drawShapePreview('circle');
-      } else if (this.shapeType === 'square') {
-        this.drawShapePreview('square');
+      if (this.shapeType === "circle") {
+        this.drawShapePreview("circle");
+      } else if (this.shapeType === "square") {
+        this.drawShapePreview("square");
       } else {
         this.drawSelectionRect();
       }
@@ -318,19 +322,17 @@ class ImageWindow {
 
     if (e.button === 2) return;
 
-
-
-    if (this.currentMode === 'color') {
+    if (this.currentMode === "color") {
       const rect = this.canvas.getBoundingClientRect();
       this.pickColor(e.clientX - rect.left, e.clientY - rect.top);
       return;
     }
 
-    if (this.currentMode === 'draw') {
+    if (this.currentMode === "draw") {
       const rect = this.canvas.getBoundingClientRect();
 
       // Circle/Square mode: center-based (like Paint)
-      if (this.shapeType === 'circle' || this.shapeType === 'square') {
+      if (this.shapeType === "circle" || this.shapeType === "square") {
         // First click sets the center
         this.isSelecting = true;
         this.selectionStartX = e.clientX - rect.left; // Center point (screen coords)
@@ -356,7 +358,11 @@ class ImageWindow {
     }
 
     // If in Selection Mode (Crop, Blur, Focus), start selection
-    if (this.currentMode === 'crop' || this.currentMode === 'blur' || this.currentMode === 'focus') {
+    if (
+      this.currentMode === "crop" ||
+      this.currentMode === "blur" ||
+      this.currentMode === "focus"
+    ) {
       this.isSelecting = true;
       const rect = this.canvas.getBoundingClientRect();
       this.selectionStartX = e.clientX - rect.left;
@@ -376,7 +382,7 @@ class ImageWindow {
 
   handleMouseMove(e) {
     // Drawing mode (freehand)
-    if (this.currentMode === 'draw' && this.isDrawing && !this.shapeType) {
+    if (this.currentMode === "draw" && this.isDrawing && !this.shapeType) {
       const rect = this.canvas.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
@@ -388,14 +394,18 @@ class ImageWindow {
       this.ctx.lineTo(mouseX, mouseY);
       this.ctx.strokeStyle = this.drawColor;
       this.ctx.lineWidth = this.brushSize * this.zoomLevel; // Scale with zoom
-      this.ctx.lineCap = 'round';
-      this.ctx.lineJoin = 'round';
+      this.ctx.lineCap = "round";
+      this.ctx.lineJoin = "round";
       this.ctx.stroke();
       return;
     }
 
     // Shape drawing mode (circle/square) - update selection
-    if (this.currentMode === 'draw' && this.isSelecting && (this.shapeType === 'circle' || this.shapeType === 'square')) {
+    if (
+      this.currentMode === "draw" &&
+      this.isSelecting &&
+      (this.shapeType === "circle" || this.shapeType === "square")
+    ) {
       const rect = this.canvas.getBoundingClientRect();
       this.selectionEndX = e.clientX - rect.left;
       this.selectionEndY = e.clientY - rect.top;
@@ -404,7 +414,7 @@ class ImageWindow {
     }
 
     // Selection Modes OR Color Picker
-    if (['crop', 'blur', 'focus', 'color'].includes(this.currentMode)) {
+    if (["crop", "blur", "focus", "color"].includes(this.currentMode)) {
       // Update Magnifier
       this.updateMagnifier(e.clientX, e.clientY);
 
@@ -494,9 +504,9 @@ class ImageWindow {
         0,
         0,
         size,
-        size
+        size,
       );
-    } catch (e) { }
+    } catch (e) {}
 
     // Draw Crosshair
     mCtx.strokeStyle = "rgba(0,0,0,0.5)";
@@ -516,22 +526,27 @@ class ImageWindow {
 
   handleMouseUp() {
     // Shape drawing (circle/square) - check isSelecting
-    if (this.currentMode === 'draw' && this.isSelecting && (this.shapeType === 'circle' || this.shapeType === 'square')) {
+    if (
+      this.currentMode === "draw" &&
+      this.isSelecting &&
+      (this.shapeType === "circle" || this.shapeType === "square")
+    ) {
       // Calculate center and radius in image coordinates
       const centerX = (this.selectionStartX - this.offsetX) / this.zoomLevel;
       const centerY = (this.selectionStartY - this.offsetY) / this.zoomLevel;
 
       const screenRadius = Math.sqrt(
         Math.pow(this.selectionEndX - this.selectionStartX, 2) +
-        Math.pow(this.selectionEndY - this.selectionStartY, 2)
+          Math.pow(this.selectionEndY - this.selectionStartY, 2),
       );
       const radius = screenRadius / this.zoomLevel;
 
-      if (radius > 1) { // Minimum size check
+      if (radius > 1) {
+        // Minimum size check
         const shapeData = { centerX, centerY, radius };
-        if (this.shapeType === 'circle') {
+        if (this.shapeType === "circle") {
           this.drawCircle(shapeData);
-        } else if (this.shapeType === 'square') {
+        } else if (this.shapeType === "square") {
           this.drawSquare(shapeData);
         }
       }
@@ -542,21 +557,24 @@ class ImageWindow {
     }
 
     // Freehand drawing
-    if (this.currentMode === 'draw' && this.isDrawing) {
+    if (this.currentMode === "draw" && this.isDrawing) {
       this.isDrawing = false;
       this.commitChanges();
       return;
     }
 
-    if (['crop', 'blur', 'focus'].includes(this.currentMode)) {
+    if (["crop", "blur", "focus"].includes(this.currentMode)) {
       // Usually keep it while moving.
     }
 
-    if (['crop', 'blur', 'focus'].includes(this.currentMode) && this.isSelecting) {
+    if (
+      ["crop", "blur", "focus"].includes(this.currentMode) &&
+      this.isSelecting
+    ) {
       // Execute Action
-      if (this.currentMode === 'crop') this.cropSelection();
-      if (this.currentMode === 'blur') this.applyBlur();
-      if (this.currentMode === 'focus') this.applyFocus();
+      if (this.currentMode === "crop") this.cropSelection();
+      if (this.currentMode === "blur") this.applyBlur();
+      if (this.currentMode === "focus") this.applyFocus();
 
       this.disableMode();
       return;
@@ -603,9 +621,11 @@ class ImageWindow {
 
   setMode(mode) {
     this.currentMode = mode;
-    if (mode === 'draw') this.canvas.style.cursor = "crosshair";
-    else if (mode === 'color') this.canvas.style.cursor = "crosshair"; // Precise cursor for color picking
-    else if (['crop', 'blur', 'focus'].includes(mode)) this.canvas.style.cursor = "crosshair";
+    if (mode === "draw") this.canvas.style.cursor = "crosshair";
+    else if (mode === "color")
+      this.canvas.style.cursor = "crosshair"; // Precise cursor for color picking
+    else if (["crop", "blur", "focus"].includes(mode))
+      this.canvas.style.cursor = "crosshair";
     else this.canvas.style.cursor = "grab";
   }
 
@@ -618,11 +638,11 @@ class ImageWindow {
   }
 
   commitChanges() {
-    if (this.currentMode === 'draw' && this.currentPath) {
-      const temp = document.createElement('canvas');
+    if (this.currentMode === "draw" && this.currentPath) {
+      const temp = document.createElement("canvas");
       temp.width = this.image.width;
       temp.height = this.image.height;
-      const tCtx = temp.getContext('2d');
+      const tCtx = temp.getContext("2d");
       tCtx.drawImage(this.image, 0, 0);
 
       tCtx.beginPath();
@@ -634,8 +654,8 @@ class ImageWindow {
       }
       tCtx.strokeStyle = this.drawColor;
       tCtx.lineWidth = this.brushSize; // Fixed size on image
-      tCtx.lineCap = 'round';
-      tCtx.lineJoin = 'round';
+      tCtx.lineCap = "round";
+      tCtx.lineJoin = "round";
       tCtx.stroke();
 
       this.loadImage(temp.toDataURL(), true, true); // Save to undo stack, preserve view
@@ -645,22 +665,24 @@ class ImageWindow {
 
   pickColor(screenX, screenY) {
     const pixel = this.ctx.getImageData(screenX, screenY, 1, 1).data;
-    const hex = "#" + ((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1);
+    const hex =
+      "#" +
+      ((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2])
+        .toString(16)
+        .slice(1);
     showToast(`Hex: ${hex} Copied to clipboard`);
     navigator.clipboard.writeText(hex);
     this.disableMode();
   }
 
-
-
   applyBlur() {
     const r = this.getSelectionRectOnImage();
     if (!r) return;
 
-    const temp = document.createElement('canvas');
+    const temp = document.createElement("canvas");
     temp.width = this.image.width;
     temp.height = this.image.height;
-    const tCtx = temp.getContext('2d');
+    const tCtx = temp.getContext("2d");
     tCtx.drawImage(this.image, 0, 0);
 
     // Use pixelation approach - more effective than blur for obscuring text
@@ -669,10 +691,10 @@ class ImageWindow {
     // Create small canvas (downscale)
     const smallW = Math.max(1, Math.floor(r.w / pixelSize));
     const smallH = Math.max(1, Math.floor(r.h / pixelSize));
-    const smallCanvas = document.createElement('canvas');
+    const smallCanvas = document.createElement("canvas");
     smallCanvas.width = smallW;
     smallCanvas.height = smallH;
-    const smallCtx = smallCanvas.getContext('2d');
+    const smallCtx = smallCanvas.getContext("2d");
 
     // Disable image smoothing for pixelated effect
     smallCtx.imageSmoothingEnabled = false;
@@ -691,10 +713,10 @@ class ImageWindow {
     const r = this.getSelectionRectOnImage();
     if (!r) return;
 
-    const temp = document.createElement('canvas');
+    const temp = document.createElement("canvas");
     temp.width = this.image.width;
     temp.height = this.image.height;
-    const tCtx = temp.getContext('2d');
+    const tCtx = temp.getContext("2d");
     tCtx.drawImage(this.image, 0, 0);
 
     tCtx.fillStyle = "rgba(0, 0, 0, 0.6)";
@@ -725,10 +747,10 @@ class ImageWindow {
   }
 
   drawCircle(r) {
-    const temp = document.createElement('canvas');
+    const temp = document.createElement("canvas");
     temp.width = this.image.width;
     temp.height = this.image.height;
-    const tCtx = temp.getContext('2d');
+    const tCtx = temp.getContext("2d");
     tCtx.drawImage(this.image, 0, 0);
 
     // r contains center and radius in image coordinates
@@ -742,31 +764,27 @@ class ImageWindow {
   }
 
   drawSquare(r) {
-    const temp = document.createElement('canvas');
+    const temp = document.createElement("canvas");
     temp.width = this.image.width;
     temp.height = this.image.height;
-    const tCtx = temp.getContext('2d');
+    const tCtx = temp.getContext("2d");
     tCtx.drawImage(this.image, 0, 0);
 
     // Draw square from center
     const halfSize = r.radius;
     tCtx.strokeStyle = this.drawColor;
     tCtx.lineWidth = this.brushSize;
-    tCtx.lineCap = 'butt';
-    tCtx.lineJoin = 'miter';
+    tCtx.lineCap = "butt";
+    tCtx.lineJoin = "miter";
     tCtx.strokeRect(
       r.centerX - halfSize,
       r.centerY - halfSize,
       halfSize * 2,
-      halfSize * 2
+      halfSize * 2,
     );
 
     this.loadImage(temp.toDataURL(), true, true); // Save to undo stack, preserve view
   }
-
-
-
-
 
   drawSelectionRect() {
     const x = Math.min(this.selectionStartX, this.selectionEndX);
@@ -788,28 +806,28 @@ class ImageWindow {
     const centerY = this.selectionStartY;
     const radius = Math.sqrt(
       Math.pow(this.selectionEndX - centerX, 2) +
-      Math.pow(this.selectionEndY - centerY, 2)
+        Math.pow(this.selectionEndY - centerY, 2),
     );
 
     this.ctx.save();
     this.ctx.strokeStyle = this.drawColor;
     this.ctx.lineWidth = this.brushSize * this.zoomLevel; // Actual size on screen
-    this.ctx.lineCap = shapeType === 'square' ? 'butt' : 'round';
-    this.ctx.lineJoin = shapeType === 'square' ? 'miter' : 'round';
+    this.ctx.lineCap = shapeType === "square" ? "butt" : "round";
+    this.ctx.lineJoin = shapeType === "square" ? "miter" : "round";
     // this.ctx.setLineDash([8]); // Removed dashed line for solid preview
 
-    if (shapeType === 'circle') {
+    if (shapeType === "circle") {
       this.ctx.beginPath();
       this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
       this.ctx.stroke();
-    } else if (shapeType === 'square') {
+    } else if (shapeType === "square") {
       // Draw square from center with side length = 2*radius
       const halfSize = radius;
       this.ctx.strokeRect(
         centerX - halfSize,
         centerY - halfSize,
         halfSize * 2,
-        halfSize * 2
+        halfSize * 2,
       );
     }
 
@@ -848,7 +866,7 @@ class ImageWindow {
       0,
       0,
       cropW,
-      cropH
+      cropH,
     );
 
     const newSrc = croppedCanvas.toDataURL();
@@ -861,12 +879,11 @@ class ImageWindow {
 
   // Helper for Draw Visualization (Screen Space)
   // This needs to be called inside drawImage or after it?
-  // Actually, we just drew to ctx in HandleMouseMove. 
+  // Actually, we just drew to ctx in HandleMouseMove.
   // But if drawImage runs (e.g. from some other event), it wipes the line.
   // So we should ideally store current drawing path in state and `drawImage` should render it if exists.
   // But simplified 'draw to ctx' works if no other reflow happens during drag.
   // We'll stick to 'draw to ctx' for now.
-
 
   getCroppedCanvas() {
     if (!this.image) return null;
@@ -885,7 +902,7 @@ class ImageWindow {
       0,
       0,
       scaledWidth,
-      scaledHeight
+      scaledHeight,
     );
     return tempCanvas;
   }
@@ -930,8 +947,7 @@ function renderCollection() {
     // Quick Paste Button
     const pasteBtn = document.createElement("button");
     pasteBtn.className = "quick-paste-btn";
-    pasteBtn.innerHTML =
-      "<i class='fa-solid fa-paste'></i>";
+    pasteBtn.innerHTML = "<i class='fa-solid fa-paste'></i>";
     //pasteBtn.title = "Paste to Window";
     pasteBtn.addEventListener("click", (e) => {
       e.stopPropagation(); // Prevent copy logic
@@ -996,7 +1012,7 @@ function removeWindow(winInstance) {
 
 function updateSettingsButtonVisibility() {
   // Check if any window has an image
-  const hasAnyImage = windows.some(win => win.image !== null);
+  const hasAnyImage = windows.some((win) => win.image !== null);
   settingsBtn.style.display = hasAnyImage ? "block" : "none";
 }
 
@@ -1025,8 +1041,10 @@ function updateLayout() {
   windows.forEach((win, index) => {
     win.setCloseButtonVisible(!hideClose);
     win.container.style.flex = "1";
-    win.container.style.borderRight = isHorizontal && index < windows.length - 1 ? "2px solid #000" : "none";
-    win.container.style.borderBottom = !isHorizontal && index < windows.length - 1 ? "2px solid #000" : "none";
+    win.container.style.borderRight =
+      isHorizontal && index < windows.length - 1 ? "2px solid #000" : "none";
+    win.container.style.borderBottom =
+      !isHorizontal && index < windows.length - 1 ? "2px solid #000" : "none";
   });
 }
 
@@ -1111,30 +1129,50 @@ function rebuildMenu() {
         icon.className = "fa-solid fa-compress";
         break;
       case "Advanced":
-        icon.className = isAdvancedSettings ? "fa-solid fa-toggle-on" : "fa-solid fa-toggle-off";
+        icon.className = isAdvancedSettings
+          ? "fa-solid fa-toggle-on"
+          : "fa-solid fa-toggle-off";
         break;
-      case "Blur": icon.className = "fa-solid fa-droplet"; icon.style.color = "white"; break;
-      case "Focus": icon.className = "fa-solid fa-eye"; icon.style.color = "white"; break;
-      case "Get Color": icon.className = "fa-solid fa-eye-dropper"; icon.style.color = "white"; break;
+      case "Blur":
+        icon.className = "fa-solid fa-droplet";
+        icon.style.color = "white";
+        break;
+      case "Focus":
+        icon.className = "fa-solid fa-eye";
+        icon.style.color = "white";
+        break;
+      case "Get Color":
+        icon.className = "fa-solid fa-eye-dropper";
+        icon.style.color = "white";
+        break;
       case "Split Window":
-        icon.className = "";
-        icon.textContent = windowLayout === "horizontal" ? "-" : "|";
-        icon.style.fontSize = "18px";
-        icon.style.lineHeight = "16px";
-        icon.style.fontWeight = "700";
+        icon.className = "fa-solid fa-minus";
         icon.style.color = "white";
         break;
 
-      case "Draw Red": icon.className = "fa-solid fa-pencil"; icon.style.color = "red"; break;
-      case "Draw Blue": icon.className = "fa-solid fa-pencil"; icon.style.color = "blue"; break;
-      case "Draw Yellow": icon.className = "fa-solid fa-pencil"; icon.style.color = "gold"; break;
-      case "Draw White": icon.className = "fa-solid fa-pencil"; icon.style.color = "white"; break;
+      case "Draw Red":
+        icon.className = "fa-solid fa-pencil";
+        icon.style.color = "red";
+        break;
+      case "Draw Blue":
+        icon.className = "fa-solid fa-pencil";
+        icon.style.color = "blue";
+        break;
+      case "Draw Yellow":
+        icon.className = "fa-solid fa-pencil";
+        icon.style.color = "gold";
+        break;
+      case "Draw White":
+        icon.className = "fa-solid fa-pencil";
+        icon.style.color = "white";
+        break;
     }
 
     div.appendChild(icon);
-    const label = item.text === "Split Window"
-      ? `Split Window: ${windowLayout.charAt(0).toUpperCase() + windowLayout.slice(1)}`
-      : item.text;
+    const label =
+      item.text === "Split Window"
+        ? `Split Window: ${windowLayout.charAt(0).toUpperCase() + windowLayout.slice(1)}`
+        : item.text;
     div.appendChild(document.createTextNode(label));
 
     div.addEventListener("click", () => {
@@ -1145,7 +1183,7 @@ function rebuildMenu() {
     div.addEventListener("mouseenter", () => (div.style.background = "#444"));
     div.addEventListener(
       "mouseleave",
-      () => (div.style.background = "transparent")
+      () => (div.style.background = "transparent"),
     );
 
     customMenu.appendChild(div);
@@ -1171,13 +1209,34 @@ function rebuildMenu() {
       icon.style.width = "16px";
 
       switch (item.text) {
-        case "Blur": icon.className = "fa-solid fa-droplet"; break;
-        case "Focus": icon.className = "fa-solid fa-eye"; break;
-        case "Get Color": icon.className = "fa-solid fa-eye-dropper"; break;
+        case "Blur":
+          icon.className = "fa-solid fa-droplet";
+          break;
+        case "Focus":
+          icon.className = "fa-solid fa-eye";
+          break;
+        case "Get Color":
+          icon.className = "fa-solid fa-eye-dropper";
+          break;
+        case "Split Window":
+          icon.className = windowLayout === "horizontal"
+            ? "fa-solid fa-grip-lines"
+            : "fa-solid fa-grip-lines-vertical";
+          icon.style.color = "white";
+          break;
 
-        case "Draw Red": icon.className = "fa-solid fa-pencil"; icon.style.color = "red"; break;
-        case "Draw Blue": icon.className = "fa-solid fa-pencil"; icon.style.color = "blue"; break;
-        case "Draw Yellow": icon.className = "fa-solid fa-pencil"; icon.style.color = "gold"; break;
+        case "Draw Red":
+          icon.className = "fa-solid fa-pencil";
+          icon.style.color = "red";
+          break;
+        case "Draw Blue":
+          icon.className = "fa-solid fa-pencil";
+          icon.style.color = "blue";
+          break;
+        case "Draw Yellow":
+          icon.className = "fa-solid fa-pencil";
+          icon.style.color = "gold";
+          break;
       }
 
       div.appendChild(icon);
@@ -1189,7 +1248,10 @@ function rebuildMenu() {
       });
 
       div.addEventListener("mouseenter", () => (div.style.background = "#444"));
-      div.addEventListener("mouseleave", () => (div.style.background = "transparent"));
+      div.addEventListener(
+        "mouseleave",
+        () => (div.style.background = "transparent"),
+      );
 
       customMenu.appendChild(div);
     });
@@ -1224,13 +1286,19 @@ function rebuildMenu() {
         // Use default color (red) and brush size (10px)
         menuTargetWindow.drawColor = "#ff0000";
         menuTargetWindow.brushSize = 10;
-        menuTargetWindow.setMode('draw');
+        menuTargetWindow.setMode("draw");
       }
     });
 
     // Hover effect
-    titleRow.addEventListener("mouseenter", () => (titleRow.style.background = "#444"));
-    titleRow.addEventListener("mouseleave", () => (titleRow.style.background = "transparent"));
+    titleRow.addEventListener(
+      "mouseenter",
+      () => (titleRow.style.background = "#444"),
+    );
+    titleRow.addEventListener(
+      "mouseleave",
+      () => (titleRow.style.background = "transparent"),
+    );
 
     drawContainer.appendChild(titleRow);
 
@@ -1241,39 +1309,42 @@ function rebuildMenu() {
     dotsRow.style.paddingLeft = "38px"; // align with text start
 
     const colors = [
-      { name: 'red', hex: '#ff0000' },
-      { name: 'blue', hex: '#0000ff' },
-      { name: 'gold', hex: '#ffd700' },
-      { name: 'white', hex: '#ffffff' }
+      { name: "red", hex: "#ff0000" },
+      { name: "blue", hex: "#0000ff" },
+      { name: "gold", hex: "#ffd700" },
+      { name: "white", hex: "#ffffff" },
     ];
 
-    colors.forEach(c => {
+    colors.forEach((c) => {
       const dot = document.createElement("div");
       dot.style.width = "20px";
       dot.style.height = "20px";
       dot.style.borderRadius = "50%";
       dot.style.backgroundColor = c.hex;
       dot.style.cursor = "pointer";
-      dot.style.border = c.name === 'white' ? "2px solid rgba(0,0,0,0.4)" : "2px solid rgba(255,255,255,0.2)";
+      dot.style.border =
+        c.name === "white"
+          ? "2px solid rgba(0,0,0,0.4)"
+          : "2px solid rgba(255,255,255,0.2)";
 
       dot.addEventListener("click", (e) => {
         e.stopPropagation();
         // Don't close menu, just update settings
         if (menuTargetWindow) {
           menuTargetWindow.drawColor = c.hex;
-          menuTargetWindow.setMode('draw');
+          menuTargetWindow.setMode("draw");
           // Update slider color immediately
           const slider = drawContainer.querySelector("input[type=range]");
           if (slider) {
-            slider.style.setProperty('--thumb-color', c.hex);
+            slider.style.setProperty("--thumb-color", c.hex);
             menuTargetWindow.brushSize = parseInt(slider.value); // Re-trigger update if needed to sync
           }
         }
       });
 
       // Hover effect helper
-      dot.onmouseenter = () => dot.style.transform = "scale(1.2)";
-      dot.onmouseleave = () => dot.style.transform = "scale(1.0)";
+      dot.onmouseenter = () => (dot.style.transform = "scale(1.2)");
+      dot.onmouseleave = () => (dot.style.transform = "scale(1.0)");
 
       dotsRow.appendChild(dot);
     });
@@ -1287,11 +1358,11 @@ function rebuildMenu() {
     shapesRow.style.marginTop = "4px";
 
     const shapes = [
-      { type: 'circle', icon: 'fa-circle' },
-      { type: 'square', icon: 'fa-square' }
+      { type: "circle", icon: "fa-circle" },
+      { type: "square", icon: "fa-square" },
     ];
 
-    shapes.forEach(s => {
+    shapes.forEach((s) => {
       const shapeBtn = document.createElement("div");
       shapeBtn.style.width = "24px";
       shapeBtn.style.height = "24px";
@@ -1301,7 +1372,7 @@ function rebuildMenu() {
       shapeBtn.style.cursor = "pointer";
       shapeBtn.style.border = "2px solid rgba(255,255,255,0.2)";
       // Make the border circular for the circle tool, otherwise rounded square
-      shapeBtn.style.borderRadius = s.type === 'circle' ? "50%" : "4px";
+      shapeBtn.style.borderRadius = s.type === "circle" ? "50%" : "4px";
       shapeBtn.style.backgroundColor = "rgba(255,255,255,0.1)";
 
       const icon = document.createElement("i");
@@ -1314,7 +1385,7 @@ function rebuildMenu() {
         hideCustomContextMenu();
         if (menuTargetWindow) {
           menuTargetWindow.shapeType = s.type;
-          menuTargetWindow.setMode('draw');
+          menuTargetWindow.setMode("draw");
         }
       });
 
@@ -1344,17 +1415,19 @@ function rebuildMenu() {
     slider.style.width = "calc(100% - 20px)"; // Full width minus padding
 
     // Initial State
-    const initialColor = menuTargetWindow ? menuTargetWindow.drawColor : "#ff0000";
+    const initialColor = menuTargetWindow
+      ? menuTargetWindow.drawColor
+      : "#ff0000";
     const initialSize = menuTargetWindow ? menuTargetWindow.brushSize : 10;
 
     // Helper to set fill percent
     const updateFill = (val, min, max) => {
       const percentage = ((val - min) / (max - min)) * 100;
-      slider.style.setProperty('--track-fill-percent', percentage + "%");
+      slider.style.setProperty("--track-fill-percent", percentage + "%");
     };
 
-    slider.style.setProperty('--thumb-color', initialColor);
-    slider.style.setProperty('--thumb-size', initialSize + "px");
+    slider.style.setProperty("--thumb-color", initialColor);
+    slider.style.setProperty("--thumb-size", initialSize + "px");
     updateFill(initialSize, 5, 50);
 
     // Prevent menu closing when interacting with slider
@@ -1366,7 +1439,7 @@ function rebuildMenu() {
         menuTargetWindow.brushSize = size;
 
         // Update Thumb Scaling & Track Fill
-        slider.style.setProperty('--thumb-size', size + "px");
+        slider.style.setProperty("--thumb-size", size + "px");
         updateFill(size, 5, 50);
       }
     });
@@ -1479,16 +1552,16 @@ function performAction(actionName) {
       }
       break;
     case "crop":
-      menuTargetWindow.setMode('crop');
+      menuTargetWindow.setMode("crop");
       break;
     case "blur":
-      menuTargetWindow.setMode('blur');
+      menuTargetWindow.setMode("blur");
       break;
     case "focus":
-      menuTargetWindow.setMode('focus');
+      menuTargetWindow.setMode("focus");
       break;
     case "getColor":
-      menuTargetWindow.setMode('color');
+      menuTargetWindow.setMode("color");
       break;
 
     case "drawRed":
@@ -1496,13 +1569,23 @@ function performAction(actionName) {
       break;
     case "toggleAdvanced":
       isAdvancedSettings = !isAdvancedSettings;
-      settingsBtn.style.transform = isAdvancedSettings ? "rotate(90deg)" : "rotate(0deg)";
-      settingsBtn.style.backgroundColor = isAdvancedSettings ? "#ffffff" : "#ffffffcc";
-      settingsBtn.style.border = isAdvancedSettings ? "2px solid white" : "none";
-      showToast(isAdvancedSettings ? "Advanced Settings ON" : "Advanced Settings OFF");
+      settingsBtn.style.transform = isAdvancedSettings
+        ? "rotate(90deg)"
+        : "rotate(0deg)";
+      settingsBtn.style.backgroundColor = isAdvancedSettings
+        ? "#ffffff"
+        : "#ffffffcc";
+      settingsBtn.style.border = isAdvancedSettings
+        ? "2px solid white"
+        : "none";
+      showToast(
+        isAdvancedSettings ? "Advanced Settings ON" : "Advanced Settings OFF",
+      );
       break;
     case "toggleLayout":
-      setWindowLayout(windowLayout === "horizontal" ? "vertical" : "horizontal");
+      setWindowLayout(
+        windowLayout === "horizontal" ? "vertical" : "horizontal",
+      );
       break;
 
     case "reset":
@@ -1541,14 +1624,18 @@ async function triggerPaste() {
         }
       }
     }
-  } catch (err) { }
+  } catch (err) {}
 }
 
 rebuildMenu();
 
 // Init Settings Button Style
-settingsBtn.style.transform = isAdvancedSettings ? "rotate(90deg)" : "rotate(0deg)";
-settingsBtn.style.backgroundColor = isAdvancedSettings ? "#ffffff" : "#ffffffcc";
+settingsBtn.style.transform = isAdvancedSettings
+  ? "rotate(90deg)"
+  : "rotate(0deg)";
+settingsBtn.style.backgroundColor = isAdvancedSettings
+  ? "#ffffff"
+  : "#ffffffcc";
 settingsBtn.style.border = isAdvancedSettings ? "2px solid white" : "none";
 
 // === Global Keyboard Shortcuts ===
