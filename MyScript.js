@@ -9,6 +9,7 @@ const toast = document.getElementById("toast");
 const settingsBtn = document.getElementById("settingsBtn");
 
 let isAdvancedSettings = true; // Auto-enabled for now
+let windowLayout = localStorage.getItem("windowLayout") || "horizontal";
 
 // Settings Toggle
 settingsBtn.addEventListener("click", () => {
@@ -999,6 +1000,13 @@ function updateSettingsButtonVisibility() {
   settingsBtn.style.display = hasAnyImage ? "block" : "none";
 }
 
+function setWindowLayout(layout) {
+  windowLayout = layout;
+  localStorage.setItem("windowLayout", layout);
+  updateLayout();
+  showToast(`Split set to ${layout}`);
+}
+
 function setActiveWindow(winInstance) {
   if (activeWindow) {
     activeWindow.container.classList.remove("active");
@@ -1011,8 +1019,14 @@ function setActiveWindow(winInstance) {
 
 function updateLayout() {
   const hideClose = windows.length <= 1;
-  windows.forEach((win) => {
+  const isHorizontal = windowLayout === "horizontal";
+  appContainer.style.flexDirection = isHorizontal ? "row" : "column";
+
+  windows.forEach((win, index) => {
     win.setCloseButtonVisible(!hideClose);
+    win.container.style.flex = "1";
+    win.container.style.borderRight = isHorizontal && index < windows.length - 1 ? "2px solid #000" : "none";
+    win.container.style.borderBottom = !isHorizontal && index < windows.length - 1 ? "2px solid #000" : "none";
   });
 }
 
@@ -1058,6 +1072,7 @@ const advancedItems = [
   { text: "Blur", action: () => performAction("blur") },
   { text: "Focus", action: () => performAction("focus") },
   { text: "Get Color", action: () => performAction("getColor") },
+  { text: "Split Window", action: () => performAction("toggleLayout") },
 
   // Draw is handled specially
 ];
@@ -1098,17 +1113,29 @@ function rebuildMenu() {
       case "Advanced":
         icon.className = isAdvancedSettings ? "fa-solid fa-toggle-on" : "fa-solid fa-toggle-off";
         break;
-      case "Blur": icon.className = "fa-solid fa-droplet"; break;
-      case "Focus": icon.className = "fa-solid fa-eye"; break;
-      case "Get Color": icon.className = "fa-solid fa-eye-dropper"; break;
+      case "Blur": icon.className = "fa-solid fa-droplet"; icon.style.color = "white"; break;
+      case "Focus": icon.className = "fa-solid fa-eye"; icon.style.color = "white"; break;
+      case "Get Color": icon.className = "fa-solid fa-eye-dropper"; icon.style.color = "white"; break;
+      case "Split Window":
+        icon.className = "";
+        icon.textContent = windowLayout === "horizontal" ? "-" : "|";
+        icon.style.fontSize = "18px";
+        icon.style.lineHeight = "16px";
+        icon.style.fontWeight = "700";
+        icon.style.color = "white";
+        break;
 
       case "Draw Red": icon.className = "fa-solid fa-pencil"; icon.style.color = "red"; break;
       case "Draw Blue": icon.className = "fa-solid fa-pencil"; icon.style.color = "blue"; break;
       case "Draw Yellow": icon.className = "fa-solid fa-pencil"; icon.style.color = "gold"; break;
+      case "Draw White": icon.className = "fa-solid fa-pencil"; icon.style.color = "white"; break;
     }
 
     div.appendChild(icon);
-    div.appendChild(document.createTextNode(item.text));
+    const label = item.text === "Split Window"
+      ? `Split Window: ${windowLayout.charAt(0).toUpperCase() + windowLayout.slice(1)}`
+      : item.text;
+    div.appendChild(document.createTextNode(label));
 
     div.addEventListener("click", () => {
       hideCustomContextMenu();
@@ -1207,7 +1234,7 @@ function rebuildMenu() {
 
     drawContainer.appendChild(titleRow);
 
-    // Color Dots (Red, Blue, Yellow)
+    // Color Dots (Red, Blue, Yellow, White)
     const dotsRow = document.createElement("div");
     dotsRow.style.display = "flex";
     dotsRow.style.gap = "15px";
@@ -1216,7 +1243,8 @@ function rebuildMenu() {
     const colors = [
       { name: 'red', hex: '#ff0000' },
       { name: 'blue', hex: '#0000ff' },
-      { name: 'gold', hex: '#ffd700' }
+      { name: 'gold', hex: '#ffd700' },
+      { name: 'white', hex: '#ffffff' }
     ];
 
     colors.forEach(c => {
@@ -1226,12 +1254,11 @@ function rebuildMenu() {
       dot.style.borderRadius = "50%";
       dot.style.backgroundColor = c.hex;
       dot.style.cursor = "pointer";
-      dot.style.border = "2px solid rgba(255,255,255,0.2)";
+      dot.style.border = c.name === 'white' ? "2px solid rgba(0,0,0,0.4)" : "2px solid rgba(255,255,255,0.2)";
 
       dot.addEventListener("click", (e) => {
         e.stopPropagation();
         // Don't close menu, just update settings
-        // hideCustomContextMenu(); 
         if (menuTargetWindow) {
           menuTargetWindow.drawColor = c.hex;
           menuTargetWindow.setMode('draw');
@@ -1473,6 +1500,9 @@ function performAction(actionName) {
       settingsBtn.style.backgroundColor = isAdvancedSettings ? "#ffffff" : "#ffffffcc";
       settingsBtn.style.border = isAdvancedSettings ? "2px solid white" : "none";
       showToast(isAdvancedSettings ? "Advanced Settings ON" : "Advanced Settings OFF");
+      break;
+    case "toggleLayout":
+      setWindowLayout(windowLayout === "horizontal" ? "vertical" : "horizontal");
       break;
 
     case "reset":
