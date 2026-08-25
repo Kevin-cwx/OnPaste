@@ -786,6 +786,38 @@ class ImageWindow {
     this.loadImage(temp.toDataURL(), true, true); // Save to undo stack, preserve view
   }
 
+  // Rotate Image - New Feature
+  rotateImage(degrees) {
+    if (!this.image) return;
+    
+    // Save current state to undo stack
+    this.undoStack.push(this.image.src);
+    this.redoStack = [];
+    
+    const temp = document.createElement('canvas');
+    const img = this.image;
+    
+    // Calculate new dimensions based on rotation
+    const rad = degrees * Math.PI / 180;
+    const cos = Math.abs(Math.cos(rad));
+    const sin = Math.abs(Math.sin(rad));
+    const newWidth = Math.ceil(img.width * cos + img.height * sin);
+    const newHeight = Math.ceil(img.width * sin + img.height * cos);
+    
+    temp.width = newWidth;
+    temp.height = newHeight;
+    const tCtx = temp.getContext('2d');
+    
+    // Translate to center, rotate, then draw
+    tCtx.translate(newWidth / 2, newHeight / 2);
+    tCtx.rotate(rad);
+    tCtx.drawImage(img, -img.width / 2, -img.height / 2);
+    
+    // Load the rotated image, reset view to fit new dimensions
+    this._applyImage(temp.toDataURL(), false);
+    showToast(`Rotated ${degrees}°`);
+  }
+
   drawSelectionRect() {
     const x = Math.min(this.selectionStartX, this.selectionEndX);
     const y = Math.min(this.selectionStartY, this.selectionEndY);
@@ -1075,7 +1107,6 @@ document.addEventListener("paste", (event) => {
 });
 
 // === Context Menu ===
-// === Context Menu ===
 let menuItems = [
   { text: "Copy", action: () => performAction("copy") },
   { text: "Paste", action: () => performAction("paste") },
@@ -1091,9 +1122,74 @@ const advancedItems = [
   { text: "Focus", action: () => performAction("focus") },
   { text: "Get Color", action: () => performAction("getColor") },
   { text: "Split Window", action: () => performAction("toggleLayout") },
-
+  // Rotate is handled specially
   // Draw is handled specially
 ];
+
+function createRotateButton() {
+  const div = document.createElement("div");
+  div.style.padding = "4px 8px";
+  div.style.display = "flex";
+  div.style.alignItems = "center";
+  div.style.gap = "15px";
+  div.style.borderRadius = "10px";
+  div.style.cursor = "default";
+  
+  // Icon container with both rotate icons
+  const iconContainer = document.createElement("span");
+  iconContainer.style.display = "flex";
+  iconContainer.style.gap = "8px";
+  iconContainer.style.alignItems = "center";
+  iconContainer.style.width = "16px";
+  
+  // Left rotate icon (clickable)
+  const leftIcon = document.createElement("i");
+  leftIcon.className = "fa-solid fa-rotate-left";
+  leftIcon.style.fontSize = "14px";
+  leftIcon.style.color = "white";
+  leftIcon.style.cursor = "pointer";
+  leftIcon.title = "Rotate Left";
+  leftIcon.addEventListener("click", (e) => {
+    e.stopPropagation();
+    hideCustomContextMenu();
+    if (menuTargetWindow) {
+      menuTargetWindow.rotateImage(-90);
+    }
+  });
+  leftIcon.addEventListener("mouseenter", () => (leftIcon.style.color = "#4fc3f7"));
+  leftIcon.addEventListener("mouseleave", () => (leftIcon.style.color = "white"));
+  
+  // Right rotate icon (clickable)
+  const rightIcon = document.createElement("i");
+  rightIcon.className = "fa-solid fa-rotate-right";
+  rightIcon.style.fontSize = "14px";
+  rightIcon.style.color = "white";
+  rightIcon.style.cursor = "pointer";
+  rightIcon.title = "Rotate Right";
+  rightIcon.addEventListener("click", (e) => {
+    e.stopPropagation();
+    hideCustomContextMenu();
+    if (menuTargetWindow) {
+      menuTargetWindow.rotateImage(90);
+    }
+  });
+  rightIcon.addEventListener("mouseenter", () => (rightIcon.style.color = "#4fc3f7"));
+  rightIcon.addEventListener("mouseleave", () => (rightIcon.style.color = "white"));
+  
+  iconContainer.appendChild(leftIcon);
+  iconContainer.appendChild(rightIcon);
+  div.appendChild(iconContainer);
+  
+  // Label
+  const label = document.createTextNode("Rotate");
+  div.appendChild(label);
+  
+  // Hover effect for the whole row
+  div.addEventListener("mouseenter", () => (div.style.background = "#444"));
+  div.addEventListener("mouseleave", () => (div.style.background = "transparent"));
+  
+  return div;
+}
 
 function rebuildMenu() {
   customMenu.innerHTML = "";
@@ -1108,7 +1204,7 @@ function rebuildMenu() {
     const icon = document.createElement("i");
     icon.style.textAlign = "center";
     icon.style.width = "16px";
-
+    
     switch (item.text) {
       case "Copy":
         icon.className = "fa-solid fa-copy";
@@ -1149,7 +1245,6 @@ function rebuildMenu() {
         icon.className = "fa-solid fa-minus";
         icon.style.color = "white";
         break;
-
       case "Draw Red":
         icon.className = "fa-solid fa-pencil";
         icon.style.color = "red";
@@ -1167,8 +1262,8 @@ function rebuildMenu() {
         icon.style.color = "white";
         break;
     }
-
     div.appendChild(icon);
+
     const label =
       item.text === "Split Window"
         ? `Split Window: ${windowLayout.charAt(0).toUpperCase() + windowLayout.slice(1)}`
@@ -1207,7 +1302,7 @@ function rebuildMenu() {
       const icon = document.createElement("i");
       icon.style.textAlign = "center";
       icon.style.width = "16px";
-
+      
       switch (item.text) {
         case "Blur":
           icon.className = "fa-solid fa-droplet";
@@ -1224,7 +1319,6 @@ function rebuildMenu() {
             : "fa-solid fa-grip-lines-vertical";
           icon.style.color = "white";
           break;
-
         case "Draw Red":
           icon.className = "fa-solid fa-pencil";
           icon.style.color = "red";
@@ -1238,7 +1332,6 @@ function rebuildMenu() {
           icon.style.color = "gold";
           break;
       }
-
       div.appendChild(icon);
       div.appendChild(document.createTextNode(item.text));
 
@@ -1256,9 +1349,13 @@ function rebuildMenu() {
       customMenu.appendChild(div);
     });
 
+    // Add Rotate button (special handling)
+    const rotateDiv = createRotateButton();
+    customMenu.appendChild(rotateDiv);
+
     // Custom Draw UI
     const drawContainer = document.createElement("div");
-    drawContainer.style.padding = "0"; // Removed padding to align with other items
+    drawContainer.style.padding = "0";
     drawContainer.style.display = "flex";
     drawContainer.style.flexDirection = "column";
     drawContainer.style.gap = "8px";
@@ -1279,18 +1376,15 @@ function rebuildMenu() {
     titleRow.appendChild(drawIcon);
     titleRow.appendChild(document.createTextNode("Draw"));
 
-    // Make title row clickable - activates draw mode with defaults
     titleRow.addEventListener("click", () => {
       hideCustomContextMenu();
       if (menuTargetWindow) {
-        // Use default color (red) and brush size (10px)
         menuTargetWindow.drawColor = "#ff0000";
         menuTargetWindow.brushSize = 10;
         menuTargetWindow.setMode("draw");
       }
     });
 
-    // Hover effect
     titleRow.addEventListener(
       "mouseenter",
       () => (titleRow.style.background = "#444"),
@@ -1302,11 +1396,11 @@ function rebuildMenu() {
 
     drawContainer.appendChild(titleRow);
 
-    // Color Dots (Red, Blue, Yellow, White)
+    // Color Dots
     const dotsRow = document.createElement("div");
     dotsRow.style.display = "flex";
     dotsRow.style.gap = "15px";
-    dotsRow.style.paddingLeft = "38px"; // align with text start
+    dotsRow.style.paddingLeft = "38px";
 
     const colors = [
       { name: "red", hex: "#ff0000" },
@@ -1329,20 +1423,17 @@ function rebuildMenu() {
 
       dot.addEventListener("click", (e) => {
         e.stopPropagation();
-        // Don't close menu, just update settings
         if (menuTargetWindow) {
           menuTargetWindow.drawColor = c.hex;
           menuTargetWindow.setMode("draw");
-          // Update slider color immediately
           const slider = drawContainer.querySelector("input[type=range]");
           if (slider) {
             slider.style.setProperty("--thumb-color", c.hex);
-            menuTargetWindow.brushSize = parseInt(slider.value); // Re-trigger update if needed to sync
+            menuTargetWindow.brushSize = parseInt(slider.value);
           }
         }
       });
 
-      // Hover effect helper
       dot.onmouseenter = () => (dot.style.transform = "scale(1.2)");
       dot.onmouseleave = () => (dot.style.transform = "scale(1.0)");
 
@@ -1350,7 +1441,7 @@ function rebuildMenu() {
     });
     drawContainer.appendChild(dotsRow);
 
-    // Shape Icons (Circle, Square, Arrow)
+    // Shape Icons
     const shapesRow = document.createElement("div");
     shapesRow.style.display = "flex";
     shapesRow.style.gap = "15px";
@@ -1371,7 +1462,6 @@ function rebuildMenu() {
       shapeBtn.style.justifyContent = "center";
       shapeBtn.style.cursor = "pointer";
       shapeBtn.style.border = "2px solid rgba(255,255,255,0.2)";
-      // Make the border circular for the circle tool, otherwise rounded square
       shapeBtn.style.borderRadius = s.type === "circle" ? "50%" : "4px";
       shapeBtn.style.backgroundColor = "rgba(255,255,255,0.1)";
 
@@ -1408,19 +1498,17 @@ function rebuildMenu() {
 
     const slider = document.createElement("input");
     slider.type = "range";
-    slider.className = "custom-slider"; // Use new CSS class
-    slider.min = "5"; // Min size 5px
+    slider.className = "custom-slider";
+    slider.min = "5";
     slider.max = "50";
     slider.value = menuTargetWindow ? menuTargetWindow.brushSize : "10";
-    slider.style.width = "calc(100% - 20px)"; // Full width minus padding
+    slider.style.width = "calc(100% - 20px)";
 
-    // Initial State
     const initialColor = menuTargetWindow
       ? menuTargetWindow.drawColor
       : "#ff0000";
     const initialSize = menuTargetWindow ? menuTargetWindow.brushSize : 10;
 
-    // Helper to set fill percent
     const updateFill = (val, min, max) => {
       const percentage = ((val - min) / (max - min)) * 100;
       slider.style.setProperty("--track-fill-percent", percentage + "%");
@@ -1430,21 +1518,17 @@ function rebuildMenu() {
     slider.style.setProperty("--thumb-size", initialSize + "px");
     updateFill(initialSize, 5, 50);
 
-    // Prevent menu closing when interacting with slider
     slider.addEventListener("click", (e) => e.stopPropagation());
 
     slider.addEventListener("input", (e) => {
       if (menuTargetWindow) {
         const size = parseInt(e.target.value);
         menuTargetWindow.brushSize = size;
-
-        // Update Thumb Scaling & Track Fill
         slider.style.setProperty("--thumb-size", size + "px");
         updateFill(size, 5, 50);
       }
     });
 
-    // If there is an active window, sync slider
     if (menuTargetWindow) {
       slider.value = menuTargetWindow.brushSize;
     }
@@ -1563,7 +1647,6 @@ function performAction(actionName) {
     case "getColor":
       menuTargetWindow.setMode("color");
       break;
-
     case "drawRed":
       // Legacy fallback or remove
       break;
