@@ -10,6 +10,7 @@ const settingsBtn = document.getElementById("settingsBtn");
 
 let isAdvancedSettings = true; // Auto-enabled for now
 let windowLayout = localStorage.getItem("windowLayout") || "horizontal";
+let lastRotateDirection = 90; // Default rotate right
 
 // Settings Toggle
 settingsBtn.addEventListener("click", () => {
@@ -129,7 +130,7 @@ class ImageWindow {
     // Advanced Modes
     this.currentMode = null; // 'crop', 'blur', 'focus', 'draw', 'text', 'color'
     this.drawColor = "#ff0000"; // Default Red
-    this.brushSize = 10; // Default Brush Size (was 5px)
+    this.brushSize = 5; // Default Brush Size (was 5px)
     this.isDrawing = false;
     this.isDrawing = false;
     this.shapeType = null; // 'circle', 'square', null
@@ -815,7 +816,6 @@ class ImageWindow {
     
     // Load the rotated image, reset view to fit new dimensions
     this._applyImage(temp.toDataURL(), false);
-    showToast(`Rotated ${degrees}°`);
   }
 
   drawSelectionRect() {
@@ -1135,12 +1135,12 @@ function createRotateButton() {
   div.style.borderRadius = "10px";
   div.style.cursor = "default";
   
-  // Icon container with both rotate icons
+  // Icon container with both rotate icons - left side, no flex-grow
   const iconContainer = document.createElement("span");
   iconContainer.style.display = "flex";
-  iconContainer.style.gap = "8px";
+  iconContainer.style.gap = "1px";
   iconContainer.style.alignItems = "center";
-  iconContainer.style.width = "16px";
+  iconContainer.style.flexShrink = "0";
   
   // Left rotate icon (clickable)
   const leftIcon = document.createElement("i");
@@ -1153,6 +1153,7 @@ function createRotateButton() {
     e.stopPropagation();
     hideCustomContextMenu();
     if (menuTargetWindow) {
+      lastRotateDirection = -90;
       menuTargetWindow.rotateImage(-90);
     }
   });
@@ -1170,6 +1171,7 @@ function createRotateButton() {
     e.stopPropagation();
     hideCustomContextMenu();
     if (menuTargetWindow) {
+      lastRotateDirection = 90;
       menuTargetWindow.rotateImage(90);
     }
   });
@@ -1180,9 +1182,22 @@ function createRotateButton() {
   iconContainer.appendChild(rightIcon);
   div.appendChild(iconContainer);
   
-  // Label
-  const label = document.createTextNode("Rotate");
-  div.appendChild(label);
+  // Label - now clickable with flex:1 to take remaining space
+  const labelSpan = document.createElement("span");
+  labelSpan.textContent = "Rotate";
+  labelSpan.style.cursor = "pointer";
+  labelSpan.style.flex = "1";
+  labelSpan.style.userSelect = "none";
+  labelSpan.addEventListener("click", (e) => {
+    e.stopPropagation();
+    hideCustomContextMenu();
+    if (menuTargetWindow) {
+      menuTargetWindow.rotateImage(lastRotateDirection);
+    }
+  });
+  labelSpan.addEventListener("mouseenter", () => (labelSpan.style.color = "#4fc3f7"));
+  labelSpan.addEventListener("mouseleave", () => (labelSpan.style.color = "white"));
+  div.appendChild(labelSpan);
   
   // Hover effect for the whole row
   div.addEventListener("mouseenter", () => (div.style.background = "#444"));
@@ -1380,7 +1395,7 @@ function rebuildMenu() {
       hideCustomContextMenu();
       if (menuTargetWindow) {
         menuTargetWindow.drawColor = "#ff0000";
-        menuTargetWindow.brushSize = 10;
+        menuTargetWindow.brushSize = 5;
         menuTargetWindow.setMode("draw");
       }
     });
