@@ -1,4 +1,6 @@
-A tool for pasting images into a browser.
+A productivity tool for pasting images into a browser.
+
+https://onpaste.netlify.app/
 
 ## Functionalities
 - Zoom
@@ -6,3 +8,9 @@ A tool for pasting images into a browser.
 - Crop
 - Paste
 - Download
+- Rotate
+- Get Color
+- Blur
+- Focus
+- Draw
+- side by side image comparison
