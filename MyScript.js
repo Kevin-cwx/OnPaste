@@ -727,7 +727,8 @@ class ImageWindow {
   // --- New Features Logic ---
   
   handleDoubleClick(e) {
-    if (this.currentMode === "draw" || this.currentMode === "text" || this.currentMode === "highlight") {
+    // draw mode covers both regular draw and highlight (isHighlight flag)
+    if (this.currentMode === "draw") {
       this.disableMode();
     }
   }
@@ -1919,6 +1920,14 @@ settingsBtn.style.border = isAdvancedSettings ? "2px solid white" : "none";
 // === Global Keyboard Shortcuts ===
 document.addEventListener("keydown", (e) => {
   if (!activeWindow) return;
+
+  // Exit draw / highlight mode on Enter
+  if (e.key === "Enter") {
+    if (activeWindow.currentMode === "draw") {
+      e.preventDefault();
+      activeWindow.disableMode();
+    }
+  }
 
   if (e.ctrlKey && e.key === "z") {
     e.preventDefault();
