@@ -361,6 +361,9 @@ class ImageWindow {
       }
 
       // Freehand drawing (no shape)
+      // e.detail >= 2 means this is the second click of a double-click — skip starting a stroke
+      // so handleDoubleClick can exit the mode cleanly without extra marks
+      if (e.detail >= 2) return;
       this.isDrawing = true;
       this.currentPath = [];
       const x = (e.clientX - rect.left - this.offsetX) / this.zoomLevel;
