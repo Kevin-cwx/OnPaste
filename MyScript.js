@@ -341,12 +341,7 @@ class ImageWindow {
     }
 
     if (this.currentMode === "text") {
-      e.preventDefault();
-      if (this.textInputEl) {
-        this.commitText();
-      } else {
-        this.showTextInput(e.clientX, e.clientY);
-      }
+      // Handled in mouseup to ensure input.focus() wins over browser focus events
       return;
     }
 
@@ -577,6 +572,16 @@ class ImageWindow {
       this.isSelecting = false;
       this.shapeType = null;
       this.disableMode();
+      return;
+    }
+
+    // Text mode: spawn (or commit) input on mouseup so input.focus() wins
+    if (this.currentMode === "text") {
+      if (this.textInputEl) {
+        this.commitText();
+      } else {
+        this.showTextInput(e.clientX, e.clientY);
+      }
       return;
     }
 
