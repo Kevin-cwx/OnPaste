@@ -134,6 +134,9 @@ class ImageWindow {
     this.isDrawing = false;
     this.isDrawing = false;
     this.shapeType = null; // 'circle', 'square', null
+    this.isHighlight = false;
+    this.textSize = 30;
+    this.textInputEl = null;
 
     this.initEvents();
   }
@@ -157,6 +160,7 @@ class ImageWindow {
     this.canvas.addEventListener("contextmenu", (e) =>
       this.handleContextMenu(e),
     );
+    this.canvas.addEventListener("dblclick", (e) => this.handleDoubleClick(e));
 
     // Drag and Drop Events
     this.container.addEventListener("dragover", (e) => {
@@ -290,6 +294,13 @@ class ImageWindow {
 
   handleWheel(event) {
     event.preventDefault();
+    if (this.currentMode === "text") {
+      this.textSize = Math.max(10, this.textSize - Math.sign(event.deltaY) * 2);
+      if (this.textInputEl) {
+        this.textInputEl.style.fontSize = (this.textSize * this.zoomLevel) + "px";
+      }
+      return;
+    }
     const delta = Math.sign(event.deltaY);
     this.zoomImage(delta, event.clientX, event.clientY);
   }
@@ -326,6 +337,16 @@ class ImageWindow {
     if (this.currentMode === "color") {
       const rect = this.canvas.getBoundingClientRect();
       this.pickColor(e.clientX - rect.left, e.clientY - rect.top);
+      return;
+    }
+
+    if (this.currentMode === "text") {
+      e.preventDefault();
+      if (this.textInputEl) {
+        this.commitText();
+      } else {
+        this.showTextInput(e.clientX, e.clientY);
+      }
       return;
     }
 
@@ -393,11 +414,13 @@ class ImageWindow {
       this.currentPath.push({ x, y });
 
       this.ctx.lineTo(mouseX, mouseY);
+      if (this.isHighlight) this.ctx.globalAlpha = 0.4;
       this.ctx.strokeStyle = this.drawColor;
       this.ctx.lineWidth = this.brushSize * this.zoomLevel; // Scale with zoom
       this.ctx.lineCap = "round";
       this.ctx.lineJoin = "round";
       this.ctx.stroke();
+      if (this.isHighlight) this.ctx.globalAlpha = 1.0;
       return;
     }
 
@@ -609,6 +632,70 @@ class ImageWindow {
     if (magnifier) magnifier.style.display = "none";
   }
 
+  showTextInput(clientX, clientY) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = (clientX - rect.left - this.offsetX) / this.zoomLevel;
+    const y = (clientY - rect.top - this.offsetY) / this.zoomLevel;
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.style.position = "absolute";
+    input.style.left = clientX + "px";
+    input.style.top = clientY + "px";
+    input.style.fontSize = (this.textSize * this.zoomLevel) + "px";
+    input.style.color = this.drawColor;
+    input.style.background = "transparent";
+    input.style.border = "1px dashed #ccc";
+    input.style.outline = "none";
+    input.style.fontFamily = "'Quicksand', sans-serif";
+    input.style.zIndex = "10000";
+
+    document.body.appendChild(input);
+    input.focus();
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        this.commitText();
+      }
+    });
+
+    input.addEventListener("blur", () => {
+      this.commitText();
+    });
+
+    this.textInputEl = input;
+    this.textInputPos = { x, y };
+  }
+
+  commitText() {
+    if (!this.textInputEl) return;
+    const text = this.textInputEl.value;
+    const x = this.textInputPos.x;
+    const y = this.textInputPos.y;
+
+    if (text.trim() !== "") {
+      const temp = document.createElement("canvas");
+      temp.width = this.image.width;
+      temp.height = this.image.height;
+      const tCtx = temp.getContext("2d");
+      tCtx.drawImage(this.image, 0, 0);
+
+      tCtx.font = this.textSize + "px 'Quicksand', sans-serif";
+      tCtx.fillStyle = this.drawColor;
+      tCtx.textBaseline = "top";
+      tCtx.fillText(text, x, y);
+
+      this.undoStack.push(this.image.src);
+      this.redoStack = [];
+      this.image.src = temp.toDataURL();
+      this.drawImage();
+    }
+
+    this.textInputEl.remove();
+    this.textInputEl = null;
+    this.disableMode();
+  }
+
   // Disable All Modes
   disableMode() {
     this.currentMode = null;
@@ -627,10 +714,18 @@ class ImageWindow {
       this.canvas.style.cursor = "crosshair"; // Precise cursor for color picking
     else if (["crop", "blur", "focus"].includes(mode))
       this.canvas.style.cursor = "crosshair";
+    else if (mode === "text")
+      this.canvas.style.cursor = "text";
     else this.canvas.style.cursor = "grab";
   }
 
   // --- New Features Logic ---
+  
+  handleDoubleClick(e) {
+    if (this.currentMode === "draw" || this.currentMode === "text" || this.currentMode === "highlight") {
+      this.disableMode();
+    }
+  }
 
   handleContextMenu(e) {
     e.preventDefault();
@@ -653,11 +748,13 @@ class ImageWindow {
           tCtx.lineTo(p.x, p.y);
         }
       }
+      if (this.isHighlight) tCtx.globalAlpha = 0.4;
       tCtx.strokeStyle = this.drawColor;
       tCtx.lineWidth = this.brushSize; // Fixed size on image
       tCtx.lineCap = "round";
       tCtx.lineJoin = "round";
       tCtx.stroke();
+      if (this.isHighlight) tCtx.globalAlpha = 1.0;
 
       this.loadImage(temp.toDataURL(), true, true); // Save to undo stack, preserve view
       this.currentPath = null;
@@ -1122,6 +1219,7 @@ const advancedItems = [
   { text: "Focus", action: () => performAction("focus") },
   { text: "Get Color", action: () => performAction("getColor") },
   { text: "Split Window", action: () => performAction("toggleLayout") },
+  { text: "Text", action: () => performAction("text") },
   // Rotate is handled specially
   // Draw is handled specially
 ];
@@ -1334,6 +1432,10 @@ function rebuildMenu() {
             : "fa-solid fa-grip-lines-vertical";
           icon.style.color = "white";
           break;
+        case "Text":
+          icon.className = "fa-solid fa-font";
+          icon.style.color = "white";
+          break;
         case "Draw Red":
           icon.className = "fa-solid fa-pencil";
           icon.style.color = "red";
@@ -1389,25 +1491,37 @@ function rebuildMenu() {
     drawIcon.className = "fa-solid fa-pencil";
     drawIcon.style.width = "16px";
     titleRow.appendChild(drawIcon);
-    titleRow.appendChild(document.createTextNode("Draw"));
+    const drawLabel = document.createElement("span");
+    drawLabel.textContent = menuTargetWindow && menuTargetWindow.isHighlight ? "Highlight" : "Draw";
+    titleRow.appendChild(drawLabel);
+
+    const toggleIcon = document.createElement("i");
+    toggleIcon.className = "fa-solid fa-repeat";
+    toggleIcon.style.marginLeft = "auto";
+    toggleIcon.style.fontSize = "12px";
+    toggleIcon.title = "Toggle Draw/Highlight";
+    toggleIcon.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (menuTargetWindow) {
+        menuTargetWindow.isHighlight = !menuTargetWindow.isHighlight;
+        drawLabel.textContent = menuTargetWindow.isHighlight ? "Highlight" : "Draw";
+        drawIcon.className = menuTargetWindow.isHighlight ? "fa-solid fa-highlighter" : "fa-solid fa-pencil";
+        menuTargetWindow.setMode("draw");
+      }
+    });
+    titleRow.appendChild(toggleIcon);
 
     titleRow.addEventListener("click", () => {
       hideCustomContextMenu();
       if (menuTargetWindow) {
         menuTargetWindow.drawColor = "#ff0000";
-        menuTargetWindow.brushSize = 5;
+        menuTargetWindow.brushSize = menuTargetWindow.isHighlight ? 20 : 5;
         menuTargetWindow.setMode("draw");
       }
     });
 
-    titleRow.addEventListener(
-      "mouseenter",
-      () => (titleRow.style.background = "#444"),
-    );
-    titleRow.addEventListener(
-      "mouseleave",
-      () => (titleRow.style.background = "transparent"),
-    );
+    titleRow.addEventListener("mouseenter", () => (titleRow.style.background = "#444"));
+    titleRow.addEventListener("mouseleave", () => (titleRow.style.background = "transparent"));
 
     drawContainer.appendChild(titleRow);
 
@@ -1440,7 +1554,11 @@ function rebuildMenu() {
         e.stopPropagation();
         if (menuTargetWindow) {
           menuTargetWindow.drawColor = c.hex;
-          menuTargetWindow.setMode("draw");
+          if (menuTargetWindow.currentMode !== "text") {
+            menuTargetWindow.setMode("draw");
+          } else if (menuTargetWindow.textInputEl) {
+            menuTargetWindow.textInputEl.style.color = c.hex;
+          }
           const slider = drawContainer.querySelector("input[type=range]");
           if (slider) {
             slider.style.setProperty("--thumb-color", c.hex);
@@ -1552,6 +1670,60 @@ function rebuildMenu() {
     drawContainer.appendChild(sliderRow);
 
     customMenu.appendChild(drawContainer);
+
+    // Text Size UI
+    const textContainer = document.createElement("div");
+    textContainer.style.padding = "0";
+    textContainer.style.display = "flex";
+    textContainer.style.flexDirection = "column";
+    textContainer.style.gap = "8px";
+    textContainer.style.marginTop = "8px";
+
+    const textSliderRow = document.createElement("div");
+    textSliderRow.style.paddingLeft = "8px";
+    
+    const textLabel = document.createElement("div");
+    textLabel.textContent = "Text Size";
+    textLabel.style.fontSize = "12px";
+    textLabel.style.marginBottom = "4px";
+    textSliderRow.appendChild(textLabel);
+
+    const textSlider = document.createElement("input");
+    textSlider.type = "range";
+    textSlider.className = "custom-slider";
+    textSlider.min = "10";
+    textSlider.max = "100";
+    textSlider.value = menuTargetWindow ? menuTargetWindow.textSize : "30";
+    textSlider.style.width = "calc(100% - 10px)";
+
+    const initialTextSize = menuTargetWindow ? menuTargetWindow.textSize : 30;
+
+    const updateTextFill = (val, min, max) => {
+      const percentage = ((val - min) / (max - min)) * 100;
+      textSlider.style.setProperty("--track-fill-percent", percentage + "%");
+    };
+
+    textSlider.style.setProperty("--thumb-color", "white");
+    textSlider.style.setProperty("--thumb-size", "14px");
+    updateTextFill(initialTextSize, 10, 100);
+
+    textSlider.addEventListener("click", (e) => e.stopPropagation());
+
+    textSlider.addEventListener("input", (e) => {
+      if (menuTargetWindow) {
+        const size = parseInt(e.target.value);
+        menuTargetWindow.textSize = size;
+        updateTextFill(size, 10, 100);
+        if (menuTargetWindow.textInputEl) {
+           menuTargetWindow.textInputEl.style.fontSize = (size * menuTargetWindow.zoomLevel) + "px";
+        }
+      }
+    });
+
+    textSliderRow.appendChild(textSlider);
+    textContainer.appendChild(textSliderRow);
+
+    customMenu.appendChild(textContainer);
   }
 }
 
@@ -1661,6 +1833,9 @@ function performAction(actionName) {
       break;
     case "getColor":
       menuTargetWindow.setMode("color");
+      break;
+    case "text":
+      menuTargetWindow.setMode("text");
       break;
     case "drawRed":
       // Legacy fallback or remove
