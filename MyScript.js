@@ -4,6 +4,9 @@ const darkModeBtn = document.getElementById("darkModeBtn");
 const collectionBtn = document.getElementById("collectionBtn");
 const collectionPanel = document.getElementById("collectionPanel");
 const closeCollectionBtn = document.getElementById("closeCollectionBtn");
+const addNoteBtn = document.getElementById("addNoteBtn");
+const notePanel = document.getElementById("notePanel");
+const noteText = document.getElementById("noteText");
 
 const toast = document.getElementById("toast");
 const settingsBtn = document.getElementById("settingsBtn");
@@ -11,6 +14,15 @@ const settingsBtn = document.getElementById("settingsBtn");
 let isAdvancedSettings = true; // Auto-enabled for now
 let windowLayout = localStorage.getItem("windowLayout") || "horizontal";
 let lastRotateDirection = 90; // Default rotate right
+
+// Restore the notepad and theme across visits.
+noteText.value = localStorage.getItem("onPasteNoteContent") || "";
+notePanel.hidden = localStorage.getItem("onPasteNoteOpen") !== "true";
+addNoteBtn.setAttribute("aria-expanded", String(!notePanel.hidden));
+if (localStorage.getItem("darkMode") === "true") {
+  document.body.classList.add("dark-mode");
+  darkModeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
+}
 
 // Settings Toggle
 settingsBtn.addEventListener("click", () => {
@@ -33,9 +45,25 @@ let imageHistory = [];
 darkModeBtn.addEventListener("click", () => {
   document.body.classList.toggle("dark-mode");
   const isDark = document.body.classList.contains("dark-mode");
+  localStorage.setItem("darkMode", String(isDark));
   darkModeBtn.innerHTML = isDark
     ? '<i class="fa-solid fa-sun"></i>'
     : '<i class="fa-solid fa-moon"></i>';
+});
+
+function setNotePanelOpen(isOpen) {
+  notePanel.hidden = !isOpen;
+  addNoteBtn.setAttribute("aria-expanded", String(isOpen));
+  localStorage.setItem("onPasteNoteOpen", String(isOpen));
+  if (isOpen) noteText.focus();
+}
+
+addNoteBtn.addEventListener("click", () => {
+  setNotePanelOpen(notePanel.hidden);
+});
+
+noteText.addEventListener("input", () => {
+  localStorage.setItem("onPasteNoteContent", noteText.value);
 });
 
 // Collection Toggle
@@ -1922,6 +1950,14 @@ settingsBtn.style.border = isAdvancedSettings ? "2px solid white" : "none";
 
 // === Global Keyboard Shortcuts ===
 document.addEventListener("keydown", (e) => {
+  if (
+    e.target instanceof HTMLInputElement ||
+    e.target instanceof HTMLTextAreaElement ||
+    e.target.isContentEditable
+  ) {
+    return;
+  }
+
   if (!activeWindow) return;
 
   // Exit draw / highlight mode on Enter

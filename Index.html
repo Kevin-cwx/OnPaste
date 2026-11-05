@@ -18,6 +18,9 @@
   <button id="collectionBtn" title="History"><i class="fa-solid fa-images"></i></button>
   <button id="darkModeBtn"><i class="fa-solid fa-moon"></i></button>
   <button id="addWindowBtn"><i class="fa-solid fa-plus"></i></button>
+  <button id="addNoteBtn" title="Toggle note" aria-label="Toggle note" aria-controls="notePanel" aria-expanded="false">
+    <i class="fa-solid fa-note-sticky"></i>
+  </button>
 
   <div id="collectionPanel">
     <button id="closeCollectionBtn" class="close-btn"
@@ -25,6 +28,10 @@
     <h3>History</h3>
     <div id="collectionList"></div>
   </div>
+
+  <section id="notePanel" aria-label="Notepad" hidden>
+    <textarea id="noteText" aria-label="Note" placeholder="Write a note..."></textarea>
+  </section>
 
   <div id="toast">Image copied to clipboard!</div>
 

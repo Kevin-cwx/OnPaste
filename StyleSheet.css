@@ -25,10 +25,9 @@ body.dark-mode {
 /* Global Buttons */
 #addWindowBtn,
 #darkModeBtn,
-#addWindowBtn,
-#darkModeBtn,
 #collectionBtn,
-#settingsBtn {
+#settingsBtn,
+#addNoteBtn {
     position: fixed;
     top: 10px;
     z-index: 1000;
@@ -65,9 +64,15 @@ body.dark-mode {
     /* Hidden by default, shown when image is loaded */
 }
 
+#addNoteBtn {
+    right: 160px;
+    padding: 0;
+}
+
 #addWindowBtn:hover,
 #darkModeBtn:hover,
-#collectionBtn:hover {
+#collectionBtn:hover,
+#addNoteBtn:hover {
     background-color: #fff;
     transform: scale(1.1);
 }
@@ -98,6 +103,43 @@ body.dark-mode #collectionPanel {
     background: rgba(40, 40, 40, 0.85);
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#notePanel {
+    position: fixed;
+    top: 60px;
+    right: 10px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    width: min(320px, calc(100vw - 20px));
+    height: 260px;
+    box-sizing: border-box;
+    color: inherit;
+    background: transparent;
+}
+
+#notePanel[hidden] {
+    display: none;
+}
+
+#noteText {
+    flex: 1;
+    min-height: 0;
+    box-sizing: border-box;
+    resize: both;
+    padding: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    outline-color: currentColor;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: 1.5;
+}
+
+body.dark-mode #noteText {
+    border-color: rgba(255, 255, 255, 0.35);
 }
 
 #collectionPanel.open {
