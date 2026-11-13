@@ -157,14 +157,16 @@ class ImageWindow {
 
     // Advanced Modes
     this.currentMode = null; // 'crop', 'blur', 'focus', 'draw', 'text', 'color'
-    this.drawColor = "#ff0000"; // Default Red
-    this.brushSize = 5; // Default Brush Size (was 5px)
+    this.drawColor = "#ffff00";
+    this.brushSize = 5;
+    this.highlightSize = 25;
     this.isDrawing = false;
     this.isDrawing = false;
     this.shapeType = null; // 'circle', 'square', null
     this.isHighlight = false;
     this.textSize = 30;
     this.textInputEl = null;
+    this.textBoxes = [];
 
     this.initEvents();
   }
@@ -318,14 +320,20 @@ class ImageWindow {
         this.drawSelectionRect();
       }
     }
+    this.positionTextBoxes();
   }
 
   handleWheel(event) {
     event.preventDefault();
     if (this.currentMode === "text") {
       this.textSize = Math.max(10, this.textSize - Math.sign(event.deltaY) * 2);
-      if (this.textInputEl) {
-        this.textInputEl.style.fontSize = (this.textSize * this.zoomLevel) + "px";
+      const activeTextBox = this.textBoxes.find(
+        (box) => box.input === this.textInputEl,
+      );
+      if (activeTextBox) {
+        activeTextBox.fontSize = this.textSize;
+        activeTextBox.input.style.fontSize =
+          activeTextBox.fontSize * this.zoomLevel + "px";
       }
       return;
     }
@@ -442,7 +450,7 @@ class ImageWindow {
       this.ctx.lineTo(mouseX, mouseY);
       if (this.isHighlight) this.ctx.globalAlpha = 0.4;
       this.ctx.strokeStyle = this.drawColor;
-      this.ctx.lineWidth = this.brushSize * this.zoomLevel; // Scale with zoom
+      this.ctx.lineWidth = this.getCurrentBrushSize() * this.zoomLevel;
       this.ctx.lineCap = "round";
       this.ctx.lineJoin = "round";
       this.ctx.stroke();
@@ -574,7 +582,7 @@ class ImageWindow {
     mCtx.stroke();
   }
 
-  handleMouseUp() {
+  handleMouseUp(e) {
     // Shape drawing (circle/square) - check isSelecting
     if (
       this.currentMode === "draw" &&
@@ -606,13 +614,11 @@ class ImageWindow {
       return;
     }
 
-    // Text mode: spawn (or commit) input on mouseup so input.focus() wins
+    // Place one editable box per text-mode activation.
     if (this.currentMode === "text") {
-      if (this.textInputEl) {
-        this.commitText();
-      } else {
-        this.showTextInput(e.clientX, e.clientY);
-      }
+      this.showTextInput(e.clientX, e.clientY);
+      this.currentMode = null;
+      this.canvas.style.cursor = "grab";
       return;
     }
 
@@ -669,71 +675,198 @@ class ImageWindow {
   }
 
   showTextInput(clientX, clientY) {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = (clientX - rect.left - this.offsetX) / this.zoomLevel;
-    const y = (clientY - rect.top - this.offsetY) / this.zoomLevel;
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const x =
+      (clientX - canvasRect.left - this.offsetX) / this.zoomLevel;
+    const y =
+      (clientY - canvasRect.top - this.offsetY) / this.zoomLevel;
+    const wrapper = document.createElement("div");
+    wrapper.className = "text-box";
 
-    const input = document.createElement("input");
-    input.type = "text";
-    input.style.position = "absolute";
-    input.style.left = clientX + "px";
-    input.style.top = clientY + "px";
-    input.style.fontSize = (this.textSize * this.zoomLevel) + "px";
+    const handle = document.createElement("div");
+    handle.className = "text-box-handle";
+    handle.setAttribute("aria-label", "Move text box");
+
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "text-box-delete";
+    deleteButton.type = "button";
+    deleteButton.title = "Delete text box";
+    deleteButton.setAttribute("aria-label", "Delete text box");
+    deleteButton.innerHTML = "<i class='fa-solid fa-xmark'></i>";
+
+    const input = document.createElement("textarea");
+    input.className = "text-box-input";
+    input.setAttribute("aria-label", "Image text");
+    input.placeholder = "Type here...";
     input.style.color = this.drawColor;
-    input.style.background = "transparent";
-    input.style.border = "1px dashed #ccc";
-    input.style.outline = "none";
-    input.style.fontFamily = "'Quicksand', sans-serif";
-    input.style.zIndex = "10000";
 
-    document.body.appendChild(input);
-    input.focus();
+    const textBox = {
+      wrapper,
+      input,
+      x,
+      y,
+      color: this.drawColor,
+      fontSize: this.textSize,
+    };
 
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        this.commitText();
-      }
+    deleteButton.addEventListener("mousedown", (event) => {
+      event.stopPropagation();
+    });
+    deleteButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      textBox.wrapper.remove();
+      this.textBoxes = this.textBoxes.filter((box) => box !== textBox);
+      if (this.textInputEl === input) this.textInputEl = null;
+      this.canvas.style.cursor = "grab";
     });
 
+    handle.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const initialX = textBox.x;
+      const initialY = textBox.y;
+
+      const moveTextBox = (moveEvent) => {
+        textBox.x =
+          initialX + (moveEvent.clientX - startX) / this.zoomLevel;
+        textBox.y =
+          initialY + (moveEvent.clientY - startY) / this.zoomLevel;
+        this.positionTextBoxes();
+      };
+      const stopMovingTextBox = () => {
+        document.removeEventListener("mousemove", moveTextBox);
+        document.removeEventListener("mouseup", stopMovingTextBox);
+      };
+
+      document.addEventListener("mousemove", moveTextBox);
+      document.addEventListener("mouseup", stopMovingTextBox);
+    });
+
+    input.addEventListener("focus", () => {
+      this.textInputEl = input;
+      this.canvas.style.cursor = "text";
+    });
     input.addEventListener("blur", () => {
-      this.commitText();
+      if (this.textInputEl === input) this.textInputEl = null;
+      this.canvas.style.cursor =
+        ["draw", "crop", "blur", "focus", "color"].includes(this.currentMode)
+          ? "crosshair"
+          : "grab";
     });
 
-    this.textInputEl = input;
-    this.textInputPos = { x, y };
+    wrapper.append(handle, input, deleteButton);
+    this.container.appendChild(wrapper);
+    this.textBoxes.push(textBox);
+    this.positionTextBoxes();
+    input.focus();
   }
 
-  commitText() {
-    if (!this.textInputEl) return;
-    const text = this.textInputEl.value;
-    const x = this.textInputPos.x;
-    const y = this.textInputPos.y;
+  positionTextBoxes() {
+    if (!this.image) return;
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const containerRect = this.container.getBoundingClientRect();
+    this.textBoxes.forEach((box) => {
+      box.wrapper.style.left =
+        canvasRect.left -
+        containerRect.left +
+        this.offsetX +
+        box.x * this.zoomLevel +
+        "px";
+      box.wrapper.style.top =
+        canvasRect.top -
+        containerRect.top +
+        this.offsetY +
+        box.y * this.zoomLevel +
+        "px";
+      box.input.style.width = 240 * this.zoomLevel + "px";
+      box.input.style.minWidth = 120 * this.zoomLevel + "px";
+      box.input.style.minHeight = 44 * this.zoomLevel + "px";
+      box.input.style.fontSize = box.fontSize * this.zoomLevel + "px";
+    });
+  }
 
-    if (text.trim() !== "") {
+  commitTextBoxes() {
+    if (this.textBoxes.length === 0) return;
+    const filledTextBoxes = this.textBoxes.filter(
+      (box) => box.input.value.trim() !== "",
+    );
+
+    if (filledTextBoxes.length > 0 && this.image) {
       const temp = document.createElement("canvas");
       temp.width = this.image.width;
       temp.height = this.image.height;
       const tCtx = temp.getContext("2d");
       tCtx.drawImage(this.image, 0, 0);
-
-      tCtx.font = this.textSize + "px 'Quicksand', sans-serif";
-      tCtx.fillStyle = this.drawColor;
       tCtx.textBaseline = "top";
-      tCtx.fillText(text, x, y);
+
+      filledTextBoxes.forEach((box) => {
+        tCtx.font = box.fontSize + "px 'Quicksand', sans-serif";
+        tCtx.fillStyle = box.color;
+        const lineHeight = box.fontSize * 1.2;
+        const maxWidth = 240;
+        let lineIndex = 0;
+        box.input.value.split("\n").forEach((paragraph) => {
+          let line = "";
+          paragraph.split(/\s+/).forEach((word) => {
+            const candidate = line ? line + " " + word : word;
+            if (line && tCtx.measureText(candidate).width > maxWidth) {
+              tCtx.fillText(line, box.x, box.y + lineIndex * lineHeight);
+              lineIndex++;
+              line = word;
+            } else {
+              line = candidate;
+            }
+          });
+          tCtx.fillText(line, box.x, box.y + lineIndex * lineHeight);
+          lineIndex++;
+        });
+      });
 
       this.undoStack.push(this.image.src);
       this.redoStack = [];
-      this.image.src = temp.toDataURL();
-      this.drawImage();
+      this._applyImage(temp.toDataURL(), true);
     }
 
-    this.textInputEl.remove();
+    this.textBoxes.forEach((box) => box.wrapper.remove());
+    this.textBoxes = [];
     this.textInputEl = null;
-    this.disableMode();
+  }
+
+  setActiveTextColor(color) {
+    const activeTextBox = this.textBoxes.find(
+      (box) => box.input === this.textInputEl,
+    );
+    if (activeTextBox) {
+      activeTextBox.color = color;
+      activeTextBox.input.style.color = color;
+    }
+  }
+
+  setActiveTextSize(size) {
+    this.textSize = size;
+    const activeTextBox = this.textBoxes.find(
+      (box) => box.input === this.textInputEl,
+    );
+    if (activeTextBox) {
+      activeTextBox.fontSize = size;
+      activeTextBox.input.style.fontSize = size * this.zoomLevel + "px";
+    }
+  }
+
+  getCurrentBrushSize() {
+    return this.isHighlight ? this.highlightSize : this.brushSize;
+  }
+
+  setCurrentBrushSize(size) {
+    if (this.isHighlight) this.highlightSize = size;
+    else this.brushSize = size;
   }
 
   // Disable All Modes
   disableMode() {
+    this.commitTextBoxes();
     this.currentMode = null;
     this.isSelecting = false;
     this.isDrawing = false;
@@ -744,6 +877,7 @@ class ImageWindow {
   }
 
   setMode(mode) {
+    if (mode !== "text") this.commitTextBoxes();
     this.currentMode = mode;
     if (mode === "draw") this.canvas.style.cursor = "crosshair";
     else if (mode === "color")
@@ -787,7 +921,7 @@ class ImageWindow {
       }
       if (this.isHighlight) tCtx.globalAlpha = 0.4;
       tCtx.strokeStyle = this.drawColor;
-      tCtx.lineWidth = this.brushSize; // Fixed size on image
+      tCtx.lineWidth = this.getCurrentBrushSize();
       tCtx.lineCap = "round";
       tCtx.lineJoin = "round";
       tCtx.stroke();
@@ -892,7 +1026,7 @@ class ImageWindow {
     tCtx.beginPath();
     tCtx.arc(r.centerX, r.centerY, r.radius, 0, 2 * Math.PI);
     tCtx.strokeStyle = this.drawColor;
-    tCtx.lineWidth = this.brushSize;
+    tCtx.lineWidth = this.getCurrentBrushSize();
     tCtx.stroke();
 
     this.loadImage(temp.toDataURL(), true, true); // Save to undo stack, preserve view
@@ -908,7 +1042,7 @@ class ImageWindow {
     // Draw square from center
     const halfSize = r.radius;
     tCtx.strokeStyle = this.drawColor;
-    tCtx.lineWidth = this.brushSize;
+    tCtx.lineWidth = this.getCurrentBrushSize();
     tCtx.lineCap = "butt";
     tCtx.lineJoin = "miter";
     tCtx.strokeRect(
@@ -977,7 +1111,7 @@ class ImageWindow {
 
     this.ctx.save();
     this.ctx.strokeStyle = this.drawColor;
-    this.ctx.lineWidth = this.brushSize * this.zoomLevel; // Actual size on screen
+    this.ctx.lineWidth = this.getCurrentBrushSize() * this.zoomLevel;
     this.ctx.lineCap = shapeType === "square" ? "butt" : "round";
     this.ctx.lineJoin = shapeType === "square" ? "miter" : "round";
     // this.ctx.setLineDash([8]); // Removed dashed line for solid preview
@@ -1405,7 +1539,7 @@ function rebuildMenu() {
         break;
       case "Draw Yellow":
         icon.className = "fa-solid fa-pencil";
-        icon.style.color = "gold";
+        icon.style.color = "yellow";
         break;
       case "Draw White":
         icon.className = "fa-solid fa-pencil";
@@ -1483,7 +1617,7 @@ function rebuildMenu() {
           break;
         case "Draw Yellow":
           icon.className = "fa-solid fa-pencil";
-          icon.style.color = "gold";
+          icon.style.color = "yellow";
           break;
       }
       div.appendChild(icon);
@@ -1544,6 +1678,13 @@ function rebuildMenu() {
         drawLabel.textContent = menuTargetWindow.isHighlight ? "Highlight" : "Draw";
         drawIcon.className = menuTargetWindow.isHighlight ? "fa-solid fa-highlighter" : "fa-solid fa-pencil";
         menuTargetWindow.setMode("draw");
+        const slider = drawContainer.querySelector("input[type=range]");
+        if (slider) {
+          const size = menuTargetWindow.getCurrentBrushSize();
+          slider.value = size;
+          slider.style.setProperty("--thumb-size", size + "px");
+          updateFill(size, 5, 50);
+        }
       }
     });
     titleRow.appendChild(toggleIcon);
@@ -1551,8 +1692,7 @@ function rebuildMenu() {
     titleRow.addEventListener("click", () => {
       hideCustomContextMenu();
       if (menuTargetWindow) {
-        menuTargetWindow.drawColor = "#ff0000";
-        menuTargetWindow.brushSize = menuTargetWindow.isHighlight ? 20 : 5;
+        menuTargetWindow.drawColor = "#ffff00";
         menuTargetWindow.setMode("draw");
       }
     });
@@ -1571,7 +1711,7 @@ function rebuildMenu() {
     const colors = [
       { name: "red", hex: "#ff0000" },
       { name: "blue", hex: "#0000ff" },
-      { name: "gold", hex: "#ffd700" },
+      { name: "yellow", hex: "#ffff00" },
       { name: "white", hex: "#ffffff" },
     ];
 
@@ -1591,15 +1731,17 @@ function rebuildMenu() {
         e.stopPropagation();
         if (menuTargetWindow) {
           menuTargetWindow.drawColor = c.hex;
+          const slider = drawContainer.querySelector("input[type=range]");
           if (menuTargetWindow.currentMode !== "text") {
             menuTargetWindow.setMode("draw");
-          } else if (menuTargetWindow.textInputEl) {
-            menuTargetWindow.textInputEl.style.color = c.hex;
+            if (slider) {
+              menuTargetWindow.setCurrentBrushSize(parseInt(slider.value));
+            }
+          } else {
+            menuTargetWindow.setActiveTextColor(c.hex);
           }
-          const slider = drawContainer.querySelector("input[type=range]");
           if (slider) {
             slider.style.setProperty("--thumb-color", c.hex);
-            menuTargetWindow.brushSize = parseInt(slider.value);
           }
         }
       });
@@ -1671,13 +1813,17 @@ function rebuildMenu() {
     slider.className = "custom-slider";
     slider.min = "5";
     slider.max = "50";
-    slider.value = menuTargetWindow ? menuTargetWindow.brushSize : "10";
+    slider.value = menuTargetWindow
+      ? menuTargetWindow.getCurrentBrushSize()
+      : "10";
     slider.style.width = "calc(100% - 20px)";
 
     const initialColor = menuTargetWindow
       ? menuTargetWindow.drawColor
-      : "#ff0000";
-    const initialSize = menuTargetWindow ? menuTargetWindow.brushSize : 10;
+      : "#ffff00";
+    const initialSize = menuTargetWindow
+      ? menuTargetWindow.getCurrentBrushSize()
+      : 10;
 
     const updateFill = (val, min, max) => {
       const percentage = ((val - min) / (max - min)) * 100;
@@ -1693,15 +1839,11 @@ function rebuildMenu() {
     slider.addEventListener("input", (e) => {
       if (menuTargetWindow) {
         const size = parseInt(e.target.value);
-        menuTargetWindow.brushSize = size;
+        menuTargetWindow.setCurrentBrushSize(size);
         slider.style.setProperty("--thumb-size", size + "px");
         updateFill(size, 5, 50);
       }
     });
-
-    if (menuTargetWindow) {
-      slider.value = menuTargetWindow.brushSize;
-    }
 
     sliderRow.appendChild(slider);
     drawContainer.appendChild(sliderRow);
@@ -1749,11 +1891,8 @@ function rebuildMenu() {
     textSlider.addEventListener("input", (e) => {
       if (menuTargetWindow) {
         const size = parseInt(e.target.value);
-        menuTargetWindow.textSize = size;
+        menuTargetWindow.setActiveTextSize(size);
         updateTextFill(size, 10, 100);
-        if (menuTargetWindow.textInputEl) {
-           menuTargetWindow.textInputEl.style.fontSize = (size * menuTargetWindow.zoomLevel) + "px";
-        }
       }
     });
 
