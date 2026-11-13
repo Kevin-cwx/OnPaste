@@ -112,7 +112,7 @@ body.dark-mode #collectionPanel {
     z-index: 2000;
     display: flex;
     flex-direction: column;
-    width: min(320px, calc(100vw - 20px));
+    width: min(780px, calc(100vw - 20px));
     height: 260px;
     box-sizing: border-box;
     color: inherit;
